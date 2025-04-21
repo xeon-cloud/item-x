@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!-- Coding by CodingLab | www.codinglabweb.com-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <!-- Boxicons CSS -->
+  <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+  <section class="container forms">
+    <div class="form login">
+      <div class="form-content">
+        <header>Авторизация</header>
+        <form action="#">
+          <div class="field input-field">
+            {{ form.username }}
+          </div>
+          <div class="field input-field">
+            {{ form.password }}
+            <i class='bx bx-hide eye-icon'></i>
+          </div>
+          <div class="form-link">
+            <a href="#" class="forgot-pass">Забыли пароль?</a>
+          </div>
+          {{ form.hidden_tag() }}
+          <div class="field button-field">
+            {{ form.submit }}
+          </div>
+        </form>
+        <div class="form-link">
+          <span>Еще нет аккаунта? <a href="/register" class="link signup-link">Регистрация</a></span>
+        </div>
+      </div>
+      <div class="h-captcha" data-sitekey="26fa5a3a-0eca-44d4-8b30-e61ae9e41e30" style="text-align: center;margin-top: 10px;"></div>
+      <div class="line"></div>
+      <div class="media-options">
+        <a href="#" class="field yandex">
+          <img src="{{ url_for('static', filename='images/yandex.png') }}" alt="Google" class="yandex-img">
+          <span class="auth-yandex-label">Войти через Яндекс ID</span>
+        </a>
+      </div>
+    </div>
+  </section>
+  <!-- JavaScript -->
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</body>
+</html>
