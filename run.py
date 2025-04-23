@@ -39,7 +39,7 @@ def sign_up():
                 db_sess = db_session.create_session()
                 db_sess.add(user)
                 db_sess.commit()
-                redirect('/')
+                return redirect('/')
         else:
             flash('Пройдите проверку на робота!', 'error')
 
@@ -57,7 +57,7 @@ def sign_in():
             db_sess = db_session.create_session()
             r = db_sess.query(User).filter(User.username == form.username.data).first()
             if r and mod.encodePassword(form.password.data) == r.hashed_password:
-                redirect('/')
+                return redirect('/')
             else:
                 flash('Неверно указан логин или пароль', 'error')
         else:
@@ -69,6 +69,9 @@ def sign_in():
 def callback():
     code = request.args.get('code')
     data = ya.authorizeUser(code)
+    db_sess = db_session.create_session()
+    if db_sess.query(User).filter(User.ya_id == int(data['id'])).first():
+        return redirect('/')
     session['id'], session['username'], session['email'] = data['id'], data['login'], data['default_email']
     return redirect('/register')
 
