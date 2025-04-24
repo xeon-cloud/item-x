@@ -1,3 +1,3 @@
 YA_CLIENT_ID = 'b7799984db0944418a7ee1d412ccd857'
 YA_SECRET = 'b976ce2045ea4dc7bebb697df9383af0'
-REDIRECT_URL = 'http://192.168.3.122:8080/callback'
+REDIRECT_URL = 'http://127.0.0.1:8080/callback'
