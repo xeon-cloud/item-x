@@ -8,7 +8,7 @@ import oauth.yandex as ya
 import oauth.model as mod
 import hcaptcha.model as cap
 from hcaptcha.config import HC_SITE_KEY
-
+# че нибудь
 
 app = Flask(__name__)
 SECRET_KEY = os.urandom(32)
@@ -78,4 +78,4 @@ def callback():
 
 if __name__ == '__main__':
     db_session.global_init("db/database.sqlite")
-    app.run(port=8080, host='0.0.0.0', debug=True)
+    app.run(port=8080, host='127.0.0.1', debug=True)
