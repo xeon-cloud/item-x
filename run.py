@@ -8,7 +8,7 @@ import oauth.yandex as ya
 import oauth.model as mod
 import hcaptcha.model as cap
 from hcaptcha.config import HC_SITE_KEY
-# че нибудь
+# че нибудь 2
 
 app = Flask(__name__)
 SECRET_KEY = os.urandom(32)
