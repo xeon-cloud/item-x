@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .category-title {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .card {
+        border: none; /* Убираем границу у карточек */
+        background-color: #0073ff;
+        transition: transform 0.2s; /* Плавный эффект при наведении */
+        text-decoration: none; /* Убираем подчеркивание у текста */
+        color: rgb(255, 255, 255);
+    }
+    .card:hover {
+        transform: scale(1.05); /* Увеличение карточки при наведении */
+    }
+    .category:hover {
+        background-color: rgb(13, 176, 240);
+    }
+</style>
+<div class="row justify-content-center mt-4">
+<div class="dropdown" style="text-align: center;">
+    <button class="btn btn-custom categories dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+      {{ category_name }}
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+      <li><a class="dropdown-item" href="/games">Игры</a></li>
+      <li><a class="dropdown-item" href="/services">Сервисы</a></li>
+    </ul>
+  </div>
+</div>
+<div class="container mt-5">
+    <!-- Категории -->
+    <div class="row justify-content-center">
+        {% for id, category in sub_categories %}
+            <div class="col-md-4 mb-4">
+                <a href="/{{ owner }}/{{ id }}" class="card text-center category">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ category }}</h5>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endblock %}
