@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .card {
+        margin: 15px;
+        transition: transform 0.2s; /* Эффект при наведении */
+    }
+    .card:hover {
+        transform: scale(1.05); /* Увеличение карточки при наведении */
+    }
+</style>
+<div class="container">
+    <div class="row">
+        {% for id, name, about in items %}
+            <div class="col-md-3 col-sm-4">
+                <div class="card">
+                    <img src="{{ url_for('static', filename='images/items/' + id + '.png') }}" class="card-img-top" alt="{{ name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ name }}</h5>
+                        <p class="card-text">{{ about }}</p>
+                        <a href="/{{ category }}/{{ subcategory }}/{{ id }}" class="btn btn-primary">Перейти</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+    </div>
+</div>
+{% endblock %}
