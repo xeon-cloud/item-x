@@ -1,16 +1,18 @@
 from flask import Flask, render_template, jsonify, url_for, request, session, redirect, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect, CSRFError
-import forms
+
 import os
+import forms
 import oauth.yandex as ya
 import oauth.model as mod
 import hcaptcha.model as cap
 from hcaptcha.config import HC_SITE_KEY
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 
 from data import db_session
 from data.users import User
 from data.subcategories import Games, Services
+from data.items import Item
 
 app = Flask(__name__)
 SECRET_KEY = os.urandom(32)
@@ -37,14 +39,31 @@ def index():
 @app.route('/games')
 def games():
     db_sess = db_session.create_session()
+    login_user(db_sess.query(User).filter(User.id == 1).first())
     res = db_sess.query(Games).all()
-    return render_template('index.html', category_name='Игры', owner='games', sub_categories=[(i.id, i.name) for i in res])
+    return render_template(
+        'index.html', category_name='Игры',
+        owner='games', sub_categories=[(i.id, i.name) for i in res]
+    )
 
 @app.route('/services')
 def services():
     db_sess = db_session.create_session()
     res = db_sess.query(Services).all()
-    return render_template('index.html', category_name='Сервисы', owner='services', sub_categories=[(i.id, i.name) for i in res])
+    return render_template(
+        'index.html', category_name='Сервисы',
+        owner='services', sub_categories=[(i.id, i.name) for i in res]
+    )
+
+
+@app.route('/<cat>/<id>')
+def loadServicesCategory(cat, id):
+    db_sess = db_session.create_session()
+    res = db_sess.query(Item).filter(Item.category_name == cat and Item.subcategory_id == int(id))
+    return render_template(
+        'catalog.html', category=cat, subcategory=id,
+        items=[(str(i.id), i.name, i.about) for i in res], backed=f'/{cat}'
+    )
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -74,7 +93,10 @@ def sign_up():
 
     elif 'id' in session and 'username' in session and 'email' in session:
             form.username.data, form.email.data = session['username'], session['email']
-    return render_template('auth/register.html', form=form, ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY)
+    return render_template(
+        'auth/register.html', form=form,
+        ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY
+    )
 
 @app.route('/login', methods=['GET', 'POST'])
 def sign_in():
@@ -93,14 +115,19 @@ def sign_in():
         else:
             flash('Пройдите проверку на робота!', 'error')
             
-    return render_template('auth/login.html', form=forms.Login(), ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY)
+    return render_template(
+        'auth/login.html', form=forms.Login(),
+        ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY
+    )
 
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
     data = ya.authorizeUser(code)
     db_sess = db_session.create_session()
-    if db_sess.query(User).filter(User.ya_id == int(data['id'])).first():
+    user = db_sess.query(User).filter(User.ya_id == int(data['id'])).first()
+    if user:
+        login_user(user)
         return redirect('/')
     session['id'], session['username'], session['email'] = data['id'], data['login'], data['default_email']
     return redirect('/register')

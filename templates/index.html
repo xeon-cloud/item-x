@@ -9,7 +9,7 @@
     }
     .card {
         border: none; /* Убираем границу у карточек */
-        background-color: #0073ff;
+        background-color: #6b85c7;
         transition: transform 0.2s; /* Плавный эффект при наведении */
         text-decoration: none; /* Убираем подчеркивание у текста */
         color: rgb(255, 255, 255);
@@ -18,8 +18,34 @@
         transform: scale(1.05); /* Увеличение карточки при наведении */
     }
     .category:hover {
-        background-color: rgb(13, 176, 240);
+        background-color: #2d51ad;
     }
+    body {
+            margin: 0;
+            height: 100vh; /* Задаем высоту на весь экран */
+            background: linear-gradient(45deg, #00ccff, #096df1, #049af1, #02ecfd);
+            background-size: 400% 400%; /* Увеличиваем размер фона для анимации */
+            animation: gradientAnimation 15s ease infinite; /* Применяем анимацию */
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        h1 {
+            color: white; /* Цвет текста */
+            text-align: center; /* Выравнивание текста по центру */
+            margin-top: 20%; /* Отступ сверху */
+            font-size: 3em; /* Размер шрифта */
+        }
 </style>
 <div class="row justify-content-center mt-4">
 <div class="dropdown" style="text-align: center;">
@@ -36,7 +62,7 @@
     <!-- Категории -->
     <div class="row justify-content-center">
         {% for id, category in sub_categories %}
-            <div class="col-md-4 mb-4">
+            <div class="col-md-2 mb-2">
                 <a href="/{{ owner }}/{{ id }}" class="card text-center category">
                     <div class="card-body">
                         <h5 class="card-title">{{ category }}</h5>

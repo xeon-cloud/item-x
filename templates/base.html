@@ -23,10 +23,37 @@
         }
         .btn-custom.categories{
             font-size: 25px;
+            background-color: rgb(21, 0, 255);
         }
         .btn-custom:hover {
-            background-color: #0055fe; /* Светлее при наведении */
+            background-color: #2d51ad; /* Светлее при наведении */
             color: #ffffff; /* Темнее при наведении */
+        }
+        body {
+            margin: 0;
+            height: 100vh; /* Задаем высоту на весь экран */
+            background: linear-gradient(45deg, #00ccff, #096df1, #049af1, #02ecfd);
+            background-size: 400% 400%; /* Увеличиваем размер фона для анимации */
+            animation: gradientAnimation 15s ease infinite; /* Применяем анимацию */
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        h1 {
+            color: white; /* Цвет текста */
+            text-align: center; /* Выравнивание текста по центру */
+            margin-top: 20%; /* Отступ сверху */
+            font-size: 3em; /* Размер шрифта */
         }
     </style>
 </head>
@@ -40,10 +67,13 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+        {% if backed %}
+            <a class="btn btn-custom" href="{{ backed }}" style="color: #ffffff;">⬅️ Назад</a>
+        {% endif %}
         <div class="collapse navbar-collapse" id="navbarNav">
             <form class="d-flex mx-auto">
                 <input class="form-control search-input me-2" type="search" placeholder="Поиск..." aria-label="Search">
-                <button class="btn btn-custom" type="submit">Поиск</button>
+                <button class="btn btn-custom" type="submit">🔎 Поиск</button>
             </form>
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
@@ -53,12 +83,7 @@
                     </a>
                     </li>
                 {% else %}
-                <li class="nav-item">
-                    <a class="nav-link btn btn-primary me-2" href="#" style="color: #ffffff;">Регистрация</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link btn btn-success me-2" href="#" style="color: #ffffff;">Вход</a>
-                </li>
+                <a class="btn btn-success" href="/login" style="color: #ffffff;">🗝️ Авторизация</a>
                 {% endif %}
             </ul>
         </div>
