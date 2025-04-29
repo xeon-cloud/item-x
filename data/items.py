@@ -23,3 +23,6 @@ class Item(db_session.SqlAlchemyBase):
     subcategory_id = sqlalchemy.Column(
         sqlalchemy.Integer
     )
+    amount = sqlalchemy.Column(
+        sqlalchemy.Integer
+    )

@@ -16,6 +16,9 @@ class User(db_session.SqlAlchemyBase, UserMixin):
     email = sqlalchemy.Column(
         sqlalchemy.String, index=True, unique=True, nullable=True
     )
+    balance = sqlalchemy.Column(
+        sqlalchemy.Integer
+    )
     hashed_password = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
     )

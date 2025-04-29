@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+<style>
+    .card {
+        margin: 20px;
+        border-radius: 15px;
+    }
+</style>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header text-center">
+                    <h3>Личный кабинет</h3>
+                </div>
+                <div class="card-body text-center">
+                    <h4>В вашем кошельке: <span id="balance">{{ balance }}₽</span></h4>
+                    <div class="mt-4">
+                        <button class="btn btn-success" data-toggle="modal" data-target="#addFundsModal">Пополнить</button>
+                        <button class="btn btn-secondary">Вывести</button>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary">История покупок</button>
+                        <button class="btn btn-info">Мои товары</button>
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a class="btn btn-danger" href="/logout">Выйти</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для пополнения средств -->
+<div class="modal fade" id="addFundsModal" tabindex="-1" role="dialog" aria-labelledby="addFundsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addFundsModalLabel">Пополнение средств</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="/deposit">
+                    <div class="form-group">
+                        <label for="amount">Введите сумму:</label>
+                        <input type="number" class="form-control" min="1" id="amount" name="amount" placeholder="Сумма в ₽" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                        <button type="submit" class="btn btn-primary">Подтвердить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
