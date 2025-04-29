@@ -11,12 +11,12 @@
 </style>
 <div class="container">
     <div class="row">
-        {% for id, name, about in items %}
+        {% for id, name, about, amount in items %}
             <div class="col-md-3 col-sm-4">
                 <div class="card">
                     <img src="{{ url_for('static', filename='images/items/' + id + '.png') }}" class="card-img-top" alt="{{ name }}">
                     <div class="card-body">
-                        <h5 class="card-title">{{ name }}</h5>
+                        <h5 class="card-title">{{ name }} | {{ amount }} ₽</h5>
                         <p class="card-text">{{ about }}</p>
                         <a href="/{{ category }}/{{ subcategory }}/{{ id }}" class="btn btn-primary">Перейти</a>
                     </div>
