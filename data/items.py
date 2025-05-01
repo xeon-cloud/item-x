@@ -14,6 +14,12 @@ class Item(db_session.SqlAlchemyBase):
     about = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
     )
+    content = sqlalchemy.Column(
+        sqlalchemy.String, nullable=True
+    )
+    file = sqlalchemy.Column(
+        sqlalchemy.String, nullable=True
+    )
     owner = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
     )

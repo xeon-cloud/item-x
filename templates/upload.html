@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .form-container {
+        background-color: rgba(63, 63, 63, 0.578);
+        border-radius: 8px;
+        padding: 30px;
+        max-width: 600px;
+        margin: auto;
+        margin-top: 25px;
+        text-align: center;
+    }
+    .form-control {
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0);
+        outline: none;
+        background-color: rgba(255, 251, 251, 0.1);
+    }
+    .form-control:focus {
+        background-color: rgba(255, 251, 251, 0.1); /* Фон при фокусировке остается тем же */
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0); /* Тень при фокусировке (если нужно) */
+        color: rgb(255, 255, 255);
+    }
+    .form-control::file-selector-button {
+        color: white;
+        background-color: rgba(255, 251, 251, 0.1);
+    }
+    .form-control::file-selector-button:hover {
+        color: white;
+        background-color: rgba(255, 251, 251, 0.1);
+    }
+</style>
+</head>
+<body>
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group mb-3">
+            {{ form.name.label(class="form-label fw-bold text-white") }}
+            {{ form.name(class="form-control") }}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.description.label(class="form-label fw-bold text-white") }}
+            {{ form.description(class="form-control") }}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.content.label(class="form-label fw-bold text-white") }}
+            {{ form.content(class="form-control") }}
+            {{ form.content_file(class="form-control", type="file", id="formFile", style="color: white") }}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.price.label(class="form-label fw-bold text-white") }}
+            {{ form.price(class="form-control") }}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.category.label(class="form-label fw-bold text-white") }}
+            {{ form.category(class="form-control", style="background-color: #4682B4", onchange="updateSubcategories()") }}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.subcategory.label(class="form-label fw-bold text-white") }}
+            {{ form.subcategory(class="form-control", style="background-color: #4682B4	") }}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.photo.label(class="form-label fw-bold text-white") }}
+            {{ form.photo(class="form-control", type="file", id="formFile", style="color: white") }}
+        </div>
+
+        <div class="text-center">
+            {{ form.submit(class="btn btn-success") }}
+        </div>
+    </form>
+</div>
+    </form>
+</div>
+
+<script>
+    function updateSubcategories() {
+        const categorySelect = document.getElementById('category');
+        const subcategorySelect = document.getElementById('subcategory');
+        
+        subcategorySelect.innerHTML = '<option value="">Выберите подкатегорию</option>';
+
+        const category = categorySelect.value;
+        
+        if (category) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `/api/v1/subcats/${category}`, true);
+
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const data = JSON.parse(xhr.responseText);
+                    data['data'].forEach(subcat => {
+                        const option = document.createElement('option');
+                        option.value = subcat[0];
+                        option.textContent = subcat[1];
+                        subcategorySelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Ошибка при загрузке данных:', xhr.statusText);
+                }
+            };
+
+            xhr.onerror = function() {
+                console.error('Запрос не удался');
+            };
+
+            xhr.send();
+        }
+    }
+</script>
+
+{% endblock %}

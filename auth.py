@@ -1,4 +1,8 @@
 from flask import request, session, flash, make_response, render_template, redirect
+import requests
+from PIL import Image
+from io import BytesIO
+import os
 
 import forms
 from init_app import app
@@ -27,12 +31,22 @@ def sign_up():
                 flash('Почта уже занята', 'error')
             else:
                 user = User()
-                ya_id = int(session['id']) if 'id' in session else None
-                user.username, user.email, user.hashed_password, user.ya_id = (form.username.data, form.email.data,
-                                                                               mod.encodePassword(form.password.data), ya_id)
+                if 'ya_login' in session and session['ya_login']:
+                    ya_id, avatar = int(session['id']), 1
+                else:
+                    ya_id, avatar = None, 0
+                user.username, user.email, user.hashed_password, user.ya_id, user.avatar = (form.username.data, form.email.data,
+                                                                               mod.encodePassword(form.password.data), ya_id, avatar)
                 db_sess = db_session.create_session()
                 db_sess.add(user)
                 db_sess.commit()
+                
+                if avatar == 1:
+                    response = requests.get(f'https://avatars.yandex.net/get-yapic/{session["avatar"]}/islands-200')
+                    image = Image.open(BytesIO(response.content))
+                    save_path = os.path.join('static', 'images', 'avatars', f'{user.id}.png')
+                    image.save(save_path, format='PNG')
+
                 response = make_response(
                     redirect('/')
                 )
@@ -41,7 +55,7 @@ def sign_up():
         else:
             flash('Пройдите проверку на робота!', 'error')
 
-    elif 'id' in session and 'username' in session and 'email' in session:
+    elif 'id' in session:
         form.username.data, form.email.data = session['username'], session['email']
 
     return render_template(
@@ -51,6 +65,7 @@ def sign_up():
 
 @app.route('/login', methods=['GET', 'POST'])
 def sign_in():
+
     form = forms.Login()
     if form.validate_on_submit():
         data = request.form
@@ -82,9 +97,11 @@ def callback():
     user = db_sess.query(User).filter(User.ya_id == int(data['id'])).first()
     if user:
         response = make_response(
-                    redirect('/')
+            redirect('/')
         )
         response.set_cookie('auth_token', mod.createAuthToken({'id': user.id}))
         return response
-    session['id'], session['username'], session['email'] = data['id'], data['login'], data['default_email']
+    session['ya_login'] = True
+    session['id'], session['username'], session['email'], session['avatar'] = (data['id'], data['login'],
+                                                                               data['default_email'], data['default_avatar_id'])
     return redirect('/register')
