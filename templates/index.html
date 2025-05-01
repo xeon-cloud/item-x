@@ -63,15 +63,21 @@
 <div class="container mt-5">
     <!-- Категории -->
     <div class="row justify-content-center">
-        {% for id, category in sub_categories %}
-            <div class="col-md-2 mb-2">
-                <a href="/{{ owner }}/{{ id }}" class="card text-center category">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ category }}</h5>
-                    </div>
-                </a>
-            </div>
-        {% endfor %}
+        {% if sub_categories %}
+            {% for id, category in sub_categories %}
+                <div class="col-md-2 mb-2">
+                    <a href="/{{ owner }}/{{ id }}" class="card text-center category">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ category }}</h5>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+                <div class="text-center" style="color: rgb(255, 255, 255);font-size: 20px;">
+                    <span>Здесь пока пусто</span>
+                </div>
+        {% endif %}
     </div>
 
 </div>

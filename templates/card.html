@@ -19,6 +19,9 @@
         width: auto;
         object-fit: contain;
     }
+    .product-image:hover {
+        transform: scale(1.05);
+    }
     .section-title {
         font-size: 1.5rem;
         margin: 20px 0 10px;
@@ -28,17 +31,11 @@
         background-color: rgba(255, 255, 255, 0.2); /* Прозрачная линия */
         margin: 10px 0; /* Отступы сверху и снизу */
     }
-    .price {
-        font-size: 1.5rem; /* Увеличен размер шрифта цены */
-        color: #ffc107; /* Желтый цвет для цены */
-        font-weight: bold;
-        margin-bottom: 20px; /* Отступ под ценой */
-    }
-    .avatar-container {
+    .owner-container {
         transition: transform 0.2s;
     }
 
-    .avatar-container:hover {
+    .owner-container:hover {
         transform: scale(1.05);
     }
     .btn-buy {
@@ -46,9 +43,33 @@
         border: none;
         color: white;
         font-size: 1.3rem; /* Размер шрифта кнопки */
+        max-width: fit-content;
+        margin: auto;
     }
     .btn-buy:hover {
         background-color: #035201;
+    }
+    .btn-edit {
+        background-color: #0066ff;
+        border: none;
+        color: white;
+        font-size: 1.3rem; /* Размер шрифта кнопки */
+        max-width: fit-content;
+        margin: auto;
+    }
+    .btn-edit:hover {
+        background-color: #002a8d;
+    }
+    .btn-delete {
+        background-color: #d70000;
+        border: none;
+        color: white;
+        font-size: 1.3rem; /* Размер шрифта кнопки */
+        max-width: fit-content;
+        margin: auto;
+    }
+    .btn-delete:hover {
+        background-color: #8b0000da;
     }
 </style>
 </head>
@@ -68,7 +89,7 @@
         <i class="fa fa-money-bill-wave" aria-hidden="true"></i>
         <span class="ms-2">Цена</span>
     </div>
-    <h2 class="price">{{ item.amount }} ₽</h2>
+    <span class="fs-3">{{ item.amount }} ₽</span>
     <div class="separator"></div>
 
     <div class="section-title">
@@ -82,7 +103,7 @@
         <i class="fa fa-user-tag" aria-hidden="true"></i>
         <span class="ms-2">Продавец</span>
     </div>
-    <div class="avatar-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
+    <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
         {% if owner.avatar == 1 %}
             <img src="{{ url_for('static', filename='images/avatars/' + owner.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
         {% else %}
@@ -91,13 +112,25 @@
         <div>
             <strong>{{ owner.username }}</strong>
         </div>
-    </div>    
-    <div class="separator"></div>
-
-    <a href="#" class="btn btn-buy mt-3">
-        <i class="fa fa-shopping-cart" aria-hidden="true"></i>
-        <span class="ms-2">Приобрести</span>
-    </a>
+    </div>  
+    <div class="button-container d-flex flex-column">
+        <div class="separator"></div>
+        <a href="/{{ item.category_name }}/{{ item.subcategory_id }}/{{ item.id }}?action=buy" class="btn btn-buy mt-3" id="buyTarget">
+            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+            <span class="ms-2">Приобрести</span>
+        </a>
+        {% if owner.id == current_user.id %}
+            <script>document.getElementById("buyTarget").style = 'pointer-events: none; opacity: 0.5;';</script>
+            <a href="/upload?action=edit&id={{ item.id }}" class="btn btn-edit mt-3">
+                <i class="fa fa-edit" aria-hidden="true"></i>
+                <span class="ms-2">Редактировать</span>
+            </a>
+            <a href="/delete?id={{ item.id }}" class="btn btn-delete mt-3">
+                <i class="fa fa-basket" aria-hidden="true"></i>
+                <span class="ms-2">Удалить</span>
+            </a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="container mt-5">

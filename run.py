@@ -1,10 +1,12 @@
-from flask import render_template, jsonify, request, session, redirect, make_response, flash, abort
+from flask import render_template, jsonify, request, session, redirect, make_response, flash, abort, url_for
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_wtf.csrf import CSRFError
+from werkzeug.datastructures import FileStorage
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 import os
 import uuid
+import json
 
 from forms import UploadItem
 import oauth.model as mod
@@ -20,17 +22,15 @@ import auth
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-cats = {
-    'games': 'Игры',
-    'services': 'Сервисы',
-    'software': 'Софт',
-    'subsсribes': 'Подписки'
-}
-
 @login_manager.user_loader
 def load_user(user_id):
     db_sess = db_session.create_session()
     return db_sess.query(User).get(user_id)
+
+def cats() -> dict:
+    with open('categories.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+    
 
 @app.after_request
 def authorize(response):
@@ -54,11 +54,11 @@ def authorize(response):
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
-    return jsonify({'code': 'csrf'})
+    return jsonify({'success': False, 'code': 'csrf'})
 
 @app.route('/')
 def index():
-    return redirect(f'/category/{list(cats.keys())[0]}')
+    return redirect(f'/category/{list(cats().keys())[0]}')
 
 
 @app.route('/category/<cat>')
@@ -66,7 +66,7 @@ def renderCategory(cat):
     db_sess = db_session.create_session()
     res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
     return render_template(
-        'index.html', category_name=cats[cat],
+        'index.html', category_name=cats()[cat],
         owner=cat, sub_categories=[(i.id, i.name) for i in res]
     )
 
@@ -86,11 +86,15 @@ def loadItemCard(cat, sub_id, item_id):
     if item:
         owner = db_sess.query(User).filter(User.username == item.owner).first()
         subcat = db_sess.query(SubCat).filter(SubCat.id == int(sub_id)).first()
+        if request.args.get('action') == 'buy':
+            if owner.id != current_user.id:
+                pass
         return render_template(
-            'card.html', item=item, cat=cats[cat],
+            'card.html', item=item, cat=cats()[cat],
             subcat=subcat.name, owner=owner, backed=f'/{cat}/{sub_id}'
         )
     abort(404)
+    
 
 @app.route('/cabinet')
 def loadCabinet():
@@ -106,8 +110,29 @@ def loadCabinet():
 def upload():
     if current_user.is_authenticated:
         form = UploadItem()
+
+        item = Item()
+        db_sess = db_session.create_session()
+        edit = False
+
+        if request.args.get('action') == 'edit':
+            id = request.args.get('id')
+            if id and id.isdigit():
+                q = db_sess.query(Item).filter(Item.id == int(id)).first()
+                if q and q.owner == current_user.username:
+                    item = q
+                    if request.method != 'POST':
+                        form.name.data, form.description.data, form.content.data, form.price.data = (
+                            item.name, item.about, item.content, item.amount
+                        )
+                        if item.file:
+                            file = open(f'{app.config["ITEMS_FILES_PATH"]}/{item.file}', 'rb')
+                            form.content_file.data = FileStorage(stream=file, filename=item.file)
+                        photo = open(f'{app.config["ITEMS_IMAGES_PATH"]}/{id}.png', 'rb')
+                        form.photo.data = FileStorage(stream=photo, filename=f'{id}.png')
+                    edit = True
+
         if request.method == 'POST':
-            item = Item()
             item.name, item.about, item.content, item.amount, item.category_name, item.subcategory_id, item.owner = (
                 form.name.data, form.description.data, form.content.data, int(form.price.data),
                 form.category.data, int(form.subcategory.data), current_user.username
@@ -120,12 +145,14 @@ def upload():
                 name = '.'.join(name)
                 file.save(os.path.join(app.config['ITEMS_FILES_PATH'], name))
                 item.file = name
-            db_sess = db_session.create_session()
-            db_sess.add(item)
+            
+            if not edit:
+                db_sess.add(item)
+
             db_sess.commit()
             form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
         return render_template(
-            'upload.html', form=form, backed='/'
+            'upload.html', form=form, action=f'/upload?action=edit&id={item.id}' if edit else '/upload', backed='/'
         )
     return redirect('/')
 
@@ -138,14 +165,20 @@ def getSubCats(cat):
 
 @app.route('/deposit', methods=['POST'])
 def deposit():
-    db_sess = db_session.create_session()
-    user = db_sess.query(User).filter(User.id == current_user.id).first()
-    user.balance += int(request.form.get('amount'))
-    db_sess.commit()
-    return render_template(
-        'cabinet.html', balance=user.balance, backed='/'
-    )
+    if current_user.is_authenticated:
+        amount = request.form.get('amount')
+        if amount:
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).filter(User.id == current_user.id).first()
+            user.balance += int(amount)
+            db_sess.commit()
+            return render_template(
+                'cabinet.html', balance=user.balance, backed='/'
+            )
+        m = 'invalid data'
+    m = 'not auth'
 
+    return jsonify({'success': False, 'message': m}), 401
 
 @app.route('/search')
 def search():

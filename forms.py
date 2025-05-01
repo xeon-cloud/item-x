@@ -31,5 +31,5 @@ class UploadItem(FlaskForm):
     category = SelectField('Категория', choices=[('', 'Выберите категорию'), ('games', 'Игры'), ('services', 'Сервисы'),
                                                  ('software', 'Софт'), ('subscribes', 'Подписки')], validators=[DataRequired()])
     subcategory = SelectField('Подкатегория', choices=[('', 'Выберите подкатегорию')], validators=[DataRequired()])
-    photo = FileField('Фото', validators=[FileRequired()])
+    photo = FileField(validators=[FileRequired()])
     submit = SubmitField('Загрузить')
