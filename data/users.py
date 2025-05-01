@@ -17,13 +17,16 @@ class User(db_session.SqlAlchemyBase, UserMixin):
         sqlalchemy.String, index=True, unique=True, nullable=True
     )
     balance = sqlalchemy.Column(
-        sqlalchemy.Integer
+        sqlalchemy.Integer, default=0
     )
     hashed_password = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
     )
     ya_id = sqlalchemy.Column(
         sqlalchemy.Integer, nullable=True
+    )
+    avatar = sqlalchemy.Column(
+        sqlalchemy.Integer, default=0
     )
     created_date = sqlalchemy.Column(
         sqlalchemy.DateTime, default=datetime.datetime.now

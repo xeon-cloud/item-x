@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, TextAreaField, DecimalField, SelectField, SubmitField, FileField
+from flask_wtf.file import FileRequired
 from wtforms.validators import DataRequired, Email, Length
 
 
@@ -19,3 +20,16 @@ class Login(FlaskForm):
     password = PasswordField(validators=[DataRequired(), Length(min=8)],
                              render_kw={'placeholder': 'Пароль', 'class': 'password', 'type': 'password'})
     submit = SubmitField('Войти')
+
+
+class UploadItem(FlaskForm):
+    name = StringField('Название', validators=[DataRequired()])
+    description = TextAreaField('Описание', validators=[DataRequired()])
+    content = TextAreaField('Содержание', validators=[DataRequired()])
+    content_file = FileField()
+    price = DecimalField('Цена', validators=[DataRequired()], places=2)
+    category = SelectField('Категория', choices=[('', 'Выберите категорию'), ('games', 'Игры'), ('services', 'Сервисы'),
+                                                 ('software', 'Софт'), ('subscribes', 'Подписки')], validators=[DataRequired()])
+    subcategory = SelectField('Подкатегория', choices=[('', 'Выберите подкатегорию')], validators=[DataRequired()])
+    photo = FileField('Фото', validators=[FileRequired()])
+    submit = SubmitField('Загрузить')

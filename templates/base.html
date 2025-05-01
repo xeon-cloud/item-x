@@ -15,7 +15,18 @@
             height: 40px; /* Высота логотипа */
         }
         .search-input {
-            width: 400px; /* Увеличенная ширина поля поиска */
+            width: 400px;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0);
+            outline: none;
+            background-color: rgba(255, 251, 251, 0.1);
+        }
+        .search-input:focus {
+            background-color: rgba(255, 251, 251, 0.1); /* Фон при фокусировке остается тем же */
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0); /* Тень при фокусировке (если нужно) */
+            color: #ffffff;
+        }
+        .search-input::placeholder {
+            color: #ffffff;
         }
         .btn-custom {
             background-color: #339ef6; /* Белый цвет кнопок */
@@ -70,6 +81,24 @@
         .support-button:hover {
             background-color: #0056b3;
         }
+        .username {
+            font-weight: bold;
+            font-size: 18px; /* или любой другой подходящий размер */
+            background: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 700%;
+            animation: rainbow 8s linear infinite;
+        }
+
+        @keyframes rainbow {
+        0% {
+            background-position: 0% 50%;
+        }
+        100% {
+            background-position: -250% 50%;
+        }
+        }
     </style>
 </head>
 <body>
@@ -82,28 +111,43 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         {% if backed %}
-            <a class="btn btn-custom" href="{{ backed }}" style="color: #ffffff;">⬅️ Назад</a>
+            <a class="btn btn-custom" href="{{ backed }}" style="color: #ffffff;">
+                <i class="fa fa-arrow-left"></i>
+                <span class="ms-2">Назад</span>
+            </a>
         {% endif %}
         <div class="collapse navbar-collapse" id="navbarNav">
-            <form class="d-flex mx-auto">
-                <input class="form-control search-input me-2" type="search" placeholder="Поиск..." aria-label="Search">
-                <button class="btn btn-custom" type="submit">🔎 Поиск</button>
+            <form class="d-flex mx-auto" action="/search">
+                <input class="form-control search-input me-2" type="search" name="query" placeholder="Поиск..." aria-label="Search">
+                <button class="btn btn-custom" type="submit">
+                    <i class="fa fa-search"></i>
+                    <span class="ms-2">Найти</span>
+                </button>
             </form>
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                     <li class="nav-item me-2">
-                        <a class="nav-link btn btn-custom" href="/load">
-                             ➕ Загрузка товара
+                        <a class="nav-link btn btn-custom" href="/upload">
+                            <i class="fa fa-upload"></i>
+                            <span class="ms-2">Загрузка товара</span>
                         </a>
                     </li>
                     <li class="nav-item me-2">
                         <a class="nav-link btn btn-custom" href="/cabinet">
-                            👤 Кабинет
+                            {% if current_user.avatar == 1 %}
+                                <img src="{{ url_for('static', filename='images/avatars/' + current_user.id|string + '.png') }}" class="rounded-circle" style="width: 40px; height: 40px;">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle" style="width: 40px; height: 40px;">
+                            {% endif %}
+                            <span class="username">{{ current_user.username }}</span>
                         </a>
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="btn btn-success" href="/login" style="color: #ffffff;">🗝️ Авторизация</a>
+                        <a class="btn btn-success" href="/login" style="color: #ffffff;">
+                            <i class="fa fa-user"></i>
+                            <span class="ms-2">Авторизация</span>
+                        </a>
                     </li>
                 {% endif %}
             </ul>

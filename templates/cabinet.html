@@ -21,16 +21,31 @@
                 <div class="card-body text-center">
                     <h4>В вашем кошельке: <span id="balance">{{ balance }}₽</span></h4>
                     <div class="mt-4">
-                        <button class="btn btn-success" data-toggle="modal" data-target="#addFundsModal">Пополнить</button>
-                        <button class="btn btn-secondary">Вывести</button>
+                        <button class="btn btn-success" data-toggle="modal" data-target="#addFundsModal">
+                            <i class="fa fa-arrow-up"></i>
+                            <span class="ms-2">Пополнить</span>
+                        </button>
+                        <button class="btn btn-secondary">
+                            <i class="fa fa-arrow-down"></i>
+                            <span class="ms-2">Вывести</span>
+                        </button>
                     </div>
                     <div class="mt-4">
-                        <button class="btn btn-primary">История покупок</button>
-                        <button class="btn btn-info">Мои товары</button>
+                        <button class="btn btn-primary">
+                            <i class="fa fa-history"></i>
+                            <span class="ms-2">История покупок</span>
+                        </button>
+                        <button class="btn btn-info">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span class="ms-2">Мои товары</span>
+                        </button>
                     </div>
                 </div>
                 <div class="card-footer text-center">
-                    <a class="btn btn-danger" href="/logout">Выйти</a>
+                    <a class="btn btn-danger" href="/logout">
+                        <i class="fa fa-sign-out-alt"></i>
+                        <span class="ms-2">Выйти</span>
+                    </a>
                 </div>
             </div>
         </div>

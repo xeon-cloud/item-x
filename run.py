@@ -1,19 +1,31 @@
-from flask import render_template, jsonify, request, session, redirect, make_response
-from flask_login import LoginManager, login_user, logout_user, current_user
+from flask import render_template, jsonify, request, session, redirect, make_response, flash, abort
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_wtf.csrf import CSRFError
+from sqlalchemy import or_
+from werkzeug.utils import secure_filename
+import os
+import uuid
 
+from forms import UploadItem
 import oauth.model as mod
 from init_app import app
 
 from data import db_session
 from data.users import User
-from data.subcategories import Games, Services
+from data.subcategories import SubCat
 from data.items import Item
 
 import auth
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+cats = {
+    'games': 'Игры',
+    'services': 'Сервисы',
+    'software': 'Софт',
+    'subsсribes': 'Подписки'
+}
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -26,16 +38,17 @@ def authorize(response):
         del session['logout']
         return response
     
-    auth_token = request.cookies.get('auth_token')
-    if auth_token:
-        try:
-            user_id = mod.decodeAuthToken(auth_token)['id']
-            db_sess = db_session.create_session()
-            user = db_sess.query(User).filter(User.id == user_id).first()
-            if user:
-                login_user(user)
-        except Exception as e:
-            print(f"Authorization error: {e}")
+    if not current_user.is_authenticated:
+        auth_token = request.cookies.get('auth_token')
+        if auth_token:
+            try:
+                user_id = mod.decodeAuthToken(auth_token)['id']
+                db_sess = db_session.create_session()
+                user = db_sess.query(User).filter(User.id == user_id).first()
+                if user:
+                    login_user(user)
+            except Exception as e:
+                print(f"Authorization error: {e}")
     
     return response
 
@@ -45,25 +58,16 @@ def handle_csrf_error(e):
 
 @app.route('/')
 def index():
-    return redirect('/games')
+    return redirect(f'/category/{list(cats.keys())[0]}')
 
 
-@app.route('/games')
-def games():
+@app.route('/category/<cat>')
+def renderCategory(cat):
     db_sess = db_session.create_session()
-    res = db_sess.query(Games).all()
+    res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
     return render_template(
-        'index.html', category_name='Игры',
-        owner='games', sub_categories=[(i.id, i.name) for i in res]
-    )
-
-@app.route('/services')
-def services():
-    db_sess = db_session.create_session()
-    res = db_sess.query(Services).all()
-    return render_template(
-        'index.html', category_name='Сервисы',
-        owner='services', sub_categories=[(i.id, i.name) for i in res]
+        'index.html', category_name=cats[cat],
+        owner=cat, sub_categories=[(i.id, i.name) for i in res]
     )
 
 
@@ -72,16 +76,21 @@ def loadServicesCategory(cat, id):
     db_sess = db_session.create_session()
     res = db_sess.query(Item).filter(Item.category_name == cat and Item.subcategory_id == int(id))
     return render_template(
-        'catalog.html', category=cat, subcategory=id,
-        items=[(str(i.id), i.name, i.about, str(i.amount) ) for i in res], backed=f'/{cat}'
+        'catalog.html', items=[(str(i.id), i.name, i.about, str(i.amount), cat, id) for i in res], backed=f'/category/{cat}'
     )
 
 @app.route('/<cat>/<sub_id>/<item_id>')
 def loadItemCard(cat, sub_id, item_id):
     db_sess = db_session.create_session()
-    return render_template(
-        'card.html', backed=f'/{cat}/{sub_id}'
-    )
+    item = db_sess.query(Item).filter(Item.id == int(item_id)).first()
+    if item:
+        owner = db_sess.query(User).filter(User.username == item.owner).first()
+        subcat = db_sess.query(SubCat).filter(SubCat.id == int(sub_id)).first()
+        return render_template(
+            'card.html', item=item, cat=cats[cat],
+            subcat=subcat.name, owner=owner, backed=f'/{cat}/{sub_id}'
+        )
+    abort(404)
 
 @app.route('/cabinet')
 def loadCabinet():
@@ -93,6 +102,38 @@ def loadCabinet():
         )
     return redirect('/')
 
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if current_user.is_authenticated:
+        form = UploadItem()
+        if request.method == 'POST':
+            item = Item()
+            item.name, item.about, item.content, item.amount, item.category_name, item.subcategory_id, item.owner = (
+                form.name.data, form.description.data, form.content.data, int(form.price.data),
+                form.category.data, int(form.subcategory.data), current_user.username
+            )
+
+            if form.content_file:
+                file = form.content_file.data
+                name = secure_filename(file.filename).split('.')
+                name[0] = str(uuid.uuid4())
+                name = '.'.join(name)
+                file.save(os.path.join(app.config['ITEMS_FILES_PATH'], name))
+                item.file = name
+            db_sess = db_session.create_session()
+            db_sess.add(item)
+            db_sess.commit()
+            form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
+        return render_template(
+            'upload.html', form=form, backed='/'
+        )
+    return redirect('/')
+
+@app.route('/api/v1/subcats/<cat>')
+def getSubCats(cat):
+    db_sess = db_session.create_session()
+    res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
+    return jsonify({'success': True, 'data': [(str(i.id), i.name) for i in res]})
 
 
 @app.route('/deposit', methods=['POST'])
@@ -105,7 +146,34 @@ def deposit():
         'cabinet.html', balance=user.balance, backed='/'
     )
 
+
+@app.route('/search')
+def search():
+    target = request.args.get('query')
+    db_sess = db_session.create_session()
+    res = db_sess.query(Item).filter(
+        or_(
+            Item.name.ilike(f'%{target.lower()}%'),
+            Item.name.ilike(f'%{target.capitalize()}%'),
+            Item.about.ilike(f'%{target.lower()}%'),
+            Item.about.ilike(f'%{target.capitalize()}%')
+    )
+    ).all()
+
+    return render_template(
+        'catalog.html', 
+        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id) for i in res], 
+        backed='/'
+    )
+
+    
+@app.route('/card')
+def card():
+    return render_template('card.html')
+
+
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
     session['logout'] = True
