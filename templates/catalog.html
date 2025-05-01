@@ -8,6 +8,7 @@
         flex-direction: column;
         height: 350px;
         overflow: hidden;
+        align-items: center;
     }
     .card img {
         max-width: 100%;
@@ -22,20 +23,26 @@
 </style>
 <div class="container">
     <div class="row">
-        {% for id, name, about, amount, cat, subcat in items %}
-            <div class="col-md-3 col-sm-4">
-                <div class="card">
-                    <img src="{{ url_for('static', filename='images/items/' + id + '.png') }}" class="card-img-top" alt="{{ name }}">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ name }} | {{ amount }} ₽</h5>
-                        <p class="card-text">{{ about }}</p>
-                        <div class="text-center">
-                            <a href="/{{ cat }}/{{ subcat }}/{{ id }}" class="btn btn-primary">Перейти</a>
+        {% if items %}
+            {% for id, name, about, amount, cat, subcat in items %}
+                <div class="col-md-3 col-sm-4">
+                    <div class="card">
+                        <img src="{{ url_for('static', filename='images/items/' + id + '.png') }}" class="card-img-top" alt="{{ name }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ name }} | {{ amount }} ₽</h5>
+                            <p class="card-text" style="text-align: center;">{{ about }}</p>
+                            <div class="text-center">
+                                <a href="/{{ cat }}/{{ subcat }}/{{ id }}" class="btn btn-primary">Перейти</a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
             {% endfor %}
+        {% else %}
+            <div class="text-center mt-5" style="color: rgb(255, 255, 255);font-size: 20px;">
+                <span>Здесь пока пусто</span>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
