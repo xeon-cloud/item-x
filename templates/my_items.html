@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-white mb-4">Мои товары</h2>
+    
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for item in items %}
+        <div class="col">
+            <div class="card h-100 bg-light">
+                <img src="{{ url_for('static', filename='images/items/' + item.id|string + '.png') }}"
+                     class="card-img-top"
+                     alt="{{ item.name }}"
+                     style="height: 200px; object-fit: contain">
+
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.name }}</h5>
+
+                    {% if item.about %}
+                    <p class="card-text text-muted">{{ item.about }}</p>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <span class="h4 text-primary">{{ item.amount }} ₽</span>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{{ url_for('loadItemCard',
+                            cat=item.category_name,
+                            sub_id=item.subcategory_id,
+                            item_id=item.id) }}"
+                           class="btn btn-primary w-100">
+                            Перейти к товару
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                Вы еще не выставили ни одного товара
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
