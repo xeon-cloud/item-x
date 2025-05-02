@@ -20,25 +20,6 @@
     .category:hover {
         background-color: #2d51ad;
     }
-    body {
-            margin: 0;
-            height: 100vh; /* Задаем высоту на весь экран */
-            background: linear-gradient(45deg, #00ccff, #096df1, #049af1, #02ecfd);
-            background-size: 400% 400%; /* Увеличиваем размер фона для анимации */
-            animation: gradientAnimation 15s ease infinite; /* Применяем анимацию */
-        }
-
-        @keyframes gradientAnimation {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
 
         h1 {
             color: white; /* Цвет текста */
@@ -68,6 +49,7 @@
                 <div class="col-md-2 mb-2">
                     <a href="/category/{{ owner }}/{{ id }}" class="card text-center category">
                         <div class="card-body">
+                            <img src="{{ url_for('static', filename='images/subcats/' + id|string + '.png') }}" class="rounded-circle" style="width: 40px; height: 40px;">
                             <h5 class="card-title">{{ category }}</h5>
                         </div>
                     </a>

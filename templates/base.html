@@ -46,7 +46,7 @@
         body {
             margin: 0;
             height: 100vh; /* Задаем высоту на весь экран */
-            background: linear-gradient(45deg, #00ccff, #096df1, #049af1, #02ecfd);
+            background: linear-gradient(45deg, #00ccff, #016175, #04f1f1, #02ecfd);
             background-size: 400% 400%; /* Увеличиваем размер фона для анимации */
             animation: gradientAnimation 15s ease infinite; /* Применяем анимацию */
         }
@@ -84,6 +84,21 @@
         .support-button:hover {
             background-color: #0056b3;
         }
+        .alerts-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 65px;
+            height: 65px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+            z-index: 1000;
+        }
+        .alerts-button:hover {
+            background-color: #0056b3;
+        }
         .username {
             font-weight: bold;
             font-size: 18px; /* или любой другой подходящий размер */
@@ -102,6 +117,40 @@
             background-position: -250% 50%;
         }
         }
+
+        #notificationDropdown {
+            background-color: #2b7cff;
+            color: #b0d9d0;
+            position: fixed; /* Фиксированное позиционирование */
+            left: 50%; /* Центрируем по горизонтали */
+            top: 50%; /* Центрируем по вертикали */
+            transform: translate(-50%, -50%); /* Сдвигаем на половину ширины и высоты */
+            z-index: 1000;
+            width: 300px; /* Ширина выпадающего меню */
+            max-height: 280px; /* Максимальная высота для трех уведомлений */
+            overflow-y: auto; /* Прокрутка по вертикали */
+            display: none; /* Изначально скрыто */
+        }
+
+        .notification-item {
+            padding: 10px; /* Отступы внутри уведомления */
+        }
+
+        hr {
+            margin: 0; /* Убираем отступы у hr */
+            border: 0; /* Убираем стандартные стили */
+            border-top: 1px solid #00163b; /* Цвет и стиль разделителя */
+        }
+        .notification-badge {
+            background-color: red; /* Красный фон */
+            color: white; /* Белый текст */
+            border-radius: 50%; /* Круглая форма */
+            padding: 2px 5px; /* Отступы */
+            font-size: 12px; /* Размер шрифта */
+            position: absolute; /* Абсолютное позиционирование */
+            top: -5px; /* Положение сверху */
+            right: -10px; /* Положение справа */
+}
     </style>
 </head>
 <body>
@@ -147,7 +196,7 @@
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="btn btn-success" href="/login" style="color: #ffffff;">
+                        <a class="btn btn-success" href="/auth/login" style="color: #ffffff;">
                             <i class="fa fa-user"></i>
                             <span class="ms-2">Авторизация</span>
                         </a>
@@ -177,13 +226,68 @@
         {% endwith %}
     </div>
 </div>
+<div class="container mt-5">
+    <div id="notificationDropdown" class="dropdown-menu" style="display: none;">
+        <div class="notification-item p-2">
+            <strong>Уведомление 1</strong>
+            <p>Ты пидарас</p>
+        </div>
+        <hr class="my-1"> <!-- Разделитель -->
+        <div class="notification-item p-2">
+            <strong>Уведомление 2</strong>
+            <p>Ты пидарас</p>
+        </div>
+        <hr class="my-1"> <!-- Разделитель -->
+        <div class="notification-item p-2">
+            <strong>Уведомление 3</strong>
+            <p>Ты пидарас</p>
+        </div>
+        <hr class="my-1"> <!-- Разделитель -->
+        <div class="notification-item p-2">
+            <strong>Уведомление 4</strong>
+            <p>Ты пидарас</p>
+        </div>
+        <hr class="my-1"> <!-- Разделитель -->
+        <div class="notification-item p-2">
+            <strong>Уведомление 5</strong>
+            <p>Это текст пятого уведомления.</p>
+        </div>
+    </div>
+</div>
 <script>
     // Автоматически показывать тосты
     $(document).ready(function() {
         $('.toast').toast({ delay: 3000 });
         $('.toast').toast('show');
     });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const notificationButton = document.getElementById('notificationButton');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+
+        notificationButton.addEventListener('click', function() {
+            // Показываем дропдаун
+            if (notificationDropdown.style.display === 'block') {
+            notificationDropdown.style.display = 'none';
+        } else {
+            notificationDropdown.style.display = 'block';
+        }
+        // Остановить всплытие события, чтобы не срабатывал клик вне
+        event.stopPropagation();
+        });
+
+        // Закрытие дропдауна при клике вне его
+        document.addEventListener('click', function(event) {
+            if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                notificationDropdown.style.display = 'none';
+            }
+        });
+    })
 </script>
+<a onclick="return false;" id="notificationButton" class="btn btn-primary rounded-circle alerts-button" title="Уведомления">
+    <span id="notificationCount" class="notification-badge">5</span>
+    <i class="fas fa-bell"></i>
+</a>
 <a href="mailto:support@example.com" class="btn btn-primary rounded-circle support-button" title="Поддержка">
     <i class="fas fa-comments"></i>
 </a>
