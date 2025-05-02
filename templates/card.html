@@ -96,8 +96,8 @@
         <span class="ms-2">Описание</span>
     </div>
     <span class="fs-3">{{ item.about }}</span>
-    <div class="separator"></div>
-    {% if owner.id == current_user.id %}
+    {% if owner.id == current_user.id and buyer %}
+        <div class="separator"></div>
         <div class="section-title">
             <i class="fa fa-user-tag" aria-hidden="true"></i>
             <span class="ms-2">Покупатель</span>
@@ -112,7 +112,8 @@
                 <strong>{{ buyer.username }}</strong>
             </div>
         </div> 
-    {% else %}
+    {% elif owner.id != current_user.id %}
+        <div class="separator"></div>
         <div class="section-title">
             <i class="fa fa-user-tag" aria-hidden="true"></i>
             <span class="ms-2">Продавец</span>
@@ -136,16 +137,6 @@
                 <span class="ms-2">Приобрести</span>
             </a>
         {% else %}
-            {% if not buyer and owner.id == current_user.id %}
-                <a href="/upload?action=edit&id={{ item.id }}" class="btn btn-edit mt-3">
-                    <i class="fa fa-edit" aria-hidden="true"></i>
-                    <span class="ms-2">Редактировать</span>
-                </a>
-                <a href="/delete?id={{ item.id }}" class="btn btn-delete mt-3">
-                    <i class="fa fa-trash" aria-hidden="true"></i>
-                    <span class="ms-2">Удалить</span>
-                </a>
-            {% endif %}
             <div class="section-title">
                 <i class="fa fa-info-circle" aria-hidden="true"></i>
                 <span class="ms-2">Содержание</span>
@@ -156,6 +147,16 @@
                 <a href="/file/download/{{ item.file }}" class="btn btn-buy mt-3" id="buyTarget">
                     <i class="fa fa-download" aria-hidden="true"></i>
                     <span class="ms-2">Скачать</span>
+                </a>
+            {% endif %}
+            {% if not buyer and owner.id == current_user.id %}
+                <a href="/upload?action=edit&id={{ item.id }}" class="btn btn-edit mt-3">
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                    <span class="ms-2">Редактировать</span>
+                </a>
+                <a href="/delete?id={{ item.id }}" class="btn btn-delete mt-3">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                    <span class="ms-2">Удалить</span>
                 </a>
             {% endif %}
         {% endif %}
