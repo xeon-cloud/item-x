@@ -21,7 +21,7 @@ class Item(db_session.SqlAlchemyBase):
         sqlalchemy.String, nullable=True
     )
     owner = sqlalchemy.Column(
-        sqlalchemy.String, nullable=True
+        sqlalchemy.Integer
     )
     category_name = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
@@ -30,5 +30,8 @@ class Item(db_session.SqlAlchemyBase):
         sqlalchemy.Integer
     )
     amount = sqlalchemy.Column(
+        sqlalchemy.Integer
+    )
+    buyer = sqlalchemy.Column(
         sqlalchemy.Integer
     )

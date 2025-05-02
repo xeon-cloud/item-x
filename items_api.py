@@ -6,7 +6,7 @@ from flask_login import current_user, login_required
 blueprint = Blueprint('items_api', __name__, template_folder='templates')
 
 
-def item_to_dict(item):
+def item_to_dict(item: Item):
     return {
         'id': item.id,
         'name': item.name,
@@ -26,7 +26,7 @@ def post_user_items():
 
     data = request.get_json()
     if not data or not 'name' in data:
-        return jsonify({'message': 'Missing required field: name'}), 400
+        return jsonify({'success': False, 'message': 'Missing required field: name'}), 400
 
     new_item = Item(
         name=data['name'],
@@ -39,10 +39,10 @@ def post_user_items():
     db_sess.add(new_item)
     try:
         db_sess.commit()
-        return jsonify({'message': 'Item created', 'id': new_item.id}), 201
+        return jsonify({'success': True, 'message': 'Item created', 'id': new_item.id}), 201
     except Exception as e:
         db_sess.rollback()
-        return jsonify({'message': 'Failed to create item', 'error': str(e)}), 500
+        return jsonify({'success': False, 'message': 'Failed to create item', 'error': str(e)}), 500
 
 
 @blueprint.route('/api/get_user_items', methods=['GET'])
@@ -52,7 +52,7 @@ def get_user_items():
     db_sess = db_session.create_session()
 
     items = db_sess.query(Item).filter(Item.owner == str(current_user.id)).all()
-    return jsonify([item_to_dict(item) for item in items])
+    return jsonify({'success': True, 'data': [item_to_dict(item) for item in items]})
 
 
 @blueprint.route('/api/update_user_items/<int:item_id>', methods=['PUT', 'DELETE'])
@@ -62,11 +62,11 @@ def update_user_item(item_id):
     db_sess = db_session.create_session()
     item = db_sess.query(Item).filter(Item.id == item_id, Item.owner == str(current_user.id)).first()
     if not item:
-        return jsonify({'message': 'Item not found or not owned by user'}), 404
+        return jsonify({'success': False, 'message': 'Item not found or not owned by user'}), 404
 
     data = request.get_json()
     if not data:
-        return jsonify({'message': 'Missing data'}), 400
+        return jsonify({'success': False, 'message': 'Missing data'}), 400
 
     if 'name' in data:
         item.name = data['name']
@@ -81,10 +81,10 @@ def update_user_item(item_id):
 
     try:
         db_sess.commit()
-        return jsonify({'message': 'Item updated'}), 200
+        return jsonify({'success': True, 'message': 'Item updated'}), 200
     except Exception as e:
         db_sess.rollback()
-        return jsonify({'message': 'Failed to update item', 'error': str(e)}), 500
+        return jsonify({'success': False, 'message': 'Failed to update item', 'error': str(e)}), 500
 
 
 @blueprint.route('/api/del_user_items/<int:item_id>', methods=['DELETE'])
@@ -94,7 +94,7 @@ def del_user_item(item_id):
     db_sess = db_session.create_session()
     item = db_sess.query(Item).filter(Item.id == item_id, Item.owner == str(current_user.id)).first()
     if not item:
-        return jsonify({'message': 'Item not found or not owned by user'}), 404
+        return jsonify({'success': False, 'message': 'Item not found or not owned by user'}), 404
 
     try:
         db_sess.delete(item)
@@ -102,4 +102,8 @@ def del_user_item(item_id):
         return '', 204
     except Exception as e:
         db_sess.rollback()
-        return jsonify({'message': 'Failed to delete item', 'error': str(e)}), 500
+        return jsonify({'success': False, 'message': 'Failed to delete item', 'error': str(e)}), 500
+    
+@blueprint.errorhandler(404)
+def page_not_found(e):
+    abort(404)

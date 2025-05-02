@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <style>
     .product-container {
         margin: 10px auto; /* Убираем отступ сверху */
@@ -98,67 +97,68 @@
     </div>
     <span class="fs-3">{{ item.about }}</span>
     <div class="separator"></div>
-
-    <div class="section-title">
-        <i class="fa fa-user-tag" aria-hidden="true"></i>
-        <span class="ms-2">Продавец</span>
-    </div>
-    <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
-        {% if owner.avatar == 1 %}
-            <img src="{{ url_for('static', filename='images/avatars/' + owner.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
-        {% else %}
-            <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
-        {% endif %}
-        <div>
-            <strong>{{ owner.username }}</strong>
+    {% if owner.id == current_user.id %}
+        <div class="section-title">
+            <i class="fa fa-user-tag" aria-hidden="true"></i>
+            <span class="ms-2">Покупатель</span>
         </div>
-    </div>  
+        <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
+            {% if buyer.avatar == 1 %}
+                <img src="{{ url_for('static', filename='images/avatars/' + buyer.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+            {% endif %}
+            <div>
+                <strong>{{ buyer.username }}</strong>
+            </div>
+        </div> 
+    {% else %}
+        <div class="section-title">
+            <i class="fa fa-user-tag" aria-hidden="true"></i>
+            <span class="ms-2">Продавец</span>
+        </div>
+        <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
+            {% if owner.avatar == 1 %}
+                <img src="{{ url_for('static', filename='images/avatars/' + owner.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+            {% endif %}
+            <div>
+                <strong>{{ owner.username }}</strong>
+            </div>
+        </div>
+    {% endif %}
     <div class="button-container d-flex flex-column">
         <div class="separator"></div>
-        <a href="/{{ item.category_name }}/{{ item.subcategory_id }}/{{ item.id }}?action=buy" class="btn btn-buy mt-3" id="buyTarget">
-            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
-            <span class="ms-2">Приобрести</span>
-        </a>
-        {% if owner.id == current_user.id %}
-            <script>document.getElementById("buyTarget").style = 'pointer-events: none; opacity: 0.5;';</script>
-            <a href="/upload?action=edit&id={{ item.id }}" class="btn btn-edit mt-3">
-                <i class="fa fa-edit" aria-hidden="true"></i>
-                <span class="ms-2">Редактировать</span>
+        {% if owner.id != current_user.id and not buyer and buyer.id != current_user.id %}
+            <a href="/category/{{ item.category_name }}/{{ item.subcategory_id }}/{{ item.id }}?action=buy" class="btn btn-buy mt-3" id="buyTarget">
+                <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                <span class="ms-2">Приобрести</span>
             </a>
-            <a href="/delete?id={{ item.id }}" class="btn btn-delete mt-3">
-                <i class="fa fa-basket" aria-hidden="true"></i>
-                <span class="ms-2">Удалить</span>
-            </a>
+        {% else %}
+            {% if not buyer and owner.id == current_user.id %}
+                <a href="/upload?action=edit&id={{ item.id }}" class="btn btn-edit mt-3">
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                    <span class="ms-2">Редактировать</span>
+                </a>
+                <a href="/delete?id={{ item.id }}" class="btn btn-delete mt-3">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                    <span class="ms-2">Удалить</span>
+                </a>
+            {% endif %}
+            <div class="section-title">
+                <i class="fa fa-info-circle" aria-hidden="true"></i>
+                <span class="ms-2">Содержание</span>
+            </div>
+            <span class="fs-3">{{ item.content }}</span>
+            <div class="separator"></div>
+            {% if item.file %}
+                <a href="/file/download/{{ item.file }}" class="btn btn-buy mt-3" id="buyTarget">
+                    <i class="fa fa-download" aria-hidden="true"></i>
+                    <span class="ms-2">Скачать</span>
+                </a>
+            {% endif %}
         {% endif %}
     </div>
 </div>
-
-<div class="container mt-5">
-    <!-- Здесь будут наши уведомления -->
-    <div id="toast-container" class="position-fixed top-0 end-0 p-3">
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="toast bg-{{ category }}" role="alert" aria-live="assertive" aria-atomic="true">
-                        <div class="toast-header">
-                            <strong class="me-auto">{{ category.capitalize() }}</strong>
-                            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-                        </div>
-                        <div class="toast-body">
-                            {{ message }}
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
-</div>
-
-<script>
-    // Автоматически показывать тосты
-    $(document).ready(function() {
-        $('.toast').toast({ delay: 3000 });
-        $('.toast').toast('show');
-    });
-</script>
 {% endblock %}
