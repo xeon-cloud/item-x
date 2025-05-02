@@ -1,4 +1,4 @@
-from flask import render_template, jsonify, request, session, redirect, make_response, flash, abort, url_for
+from flask import render_template, jsonify, request, session, redirect, make_response, flash, abort, send_file, url_for
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_wtf.csrf import CSRFError
 from werkzeug.datastructures import FileStorage
@@ -52,9 +52,11 @@ def authorize(response):
     
     return response
 
+
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return jsonify({'success': False, 'code': 'csrf'})
+
 
 @app.route('/')
 def index():
@@ -71,30 +73,45 @@ def renderCategory(cat):
     )
 
 
-@app.route('/<cat>/<id>')
+@app.route('/category/<cat>/<id>')
 def loadServicesCategory(cat, id):
     db_sess = db_session.create_session()
-    res = db_sess.query(Item).filter(Item.category_name == cat and Item.subcategory_id == int(id))
+    items = db_sess.query(Item).filter(
+        (Item.category_name == cat) & 
+        (Item.subcategory_id == int(id)) & 
+        (Item.buyer == None)
+    ).all()
     return render_template(
-        'catalog.html', items=[(str(i.id), i.name, i.about, str(i.amount), cat, id) for i in res], backed=f'/category/{cat}'
+        'catalog.html', items=[(str(i.id), i.name, i.about, str(i.amount), cat, id) for i in items],
+        backed=f'/category/{cat}'
     )
 
-@app.route('/<cat>/<sub_id>/<item_id>')
+
+@app.route('/category/<cat>/<sub_id>/<item_id>')
 def loadItemCard(cat, sub_id, item_id):
     db_sess = db_session.create_session()
     item = db_sess.query(Item).filter(Item.id == int(item_id)).first()
-    if item:
-        owner = db_sess.query(User).filter(User.username == item.owner).first()
-        subcat = db_sess.query(SubCat).filter(SubCat.id == int(sub_id)).first()
-        if request.args.get('action') == 'buy':
-            if owner.id != current_user.id:
-                pass
-        return render_template(
-            'card.html', item=item, cat=cats()[cat],
-            subcat=subcat.name, owner=owner, backed=f'/{cat}/{sub_id}'
-        )
+    subcat = db_sess.query(SubCat).filter(SubCat.id == int(sub_id)).first()
+    if item and subcat and cat in list(cats().keys()):
+        owner = db_sess.query(User).filter(User.id == item.owner).first()
+        buyer = db_sess.query(User).filter(User.id == item.buyer).first()
+        if not item.buyer or current_user.id in [item.buyer, owner.id]:
+            if request.args.get('action') == 'buy' and not item.buyer:
+                if owner.id != current_user.id:
+                    if current_user.balance >= item.amount:
+                        current_user.balance -= item.amount
+                        item.buyer, buyer = current_user.id, current_user
+                        db_sess.commit()
+                        flash('Товар куплен', 'success')
+
+            return render_template(
+                'card.html', item=item, cat=cats()[cat],
+                subcat=subcat.name, owner=owner, buyer=buyer,
+                backed=f'/category/{cat}/{sub_id}'
+            )
+        
     abort(404)
-    
+
 
 @app.route('/cabinet')
 def loadCabinet():
@@ -105,6 +122,7 @@ def loadCabinet():
             'cabinet.html', balance=user.balance, backed='/'
         )
     return redirect('/')
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -135,7 +153,7 @@ def upload():
         if request.method == 'POST':
             item.name, item.about, item.content, item.amount, item.category_name, item.subcategory_id, item.owner = (
                 form.name.data, form.description.data, form.content.data, int(form.price.data),
-                form.category.data, int(form.subcategory.data), current_user.username
+                form.category.data, int(form.subcategory.data), current_user.id
             )
 
             if form.content_file:
@@ -152,9 +170,19 @@ def upload():
             db_sess.commit()
             form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
         return render_template(
-            'upload.html', form=form, action=f'/upload?action=edit&id={item.id}' if edit else '/upload', backed='/'
+            'upload.html', form=form,
+            action=f'/upload?action=edit&id={item.id}' if edit else '/upload', backed='/'
         )
     return redirect('/')
+
+
+@app.route('/file/download/<filename>')
+def download(filename):
+    path = os.path.join(f"{app.config['ITEMS_FILES_PATH']}/{filename}")
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True)
+    abort(404)
+
 
 @app.route('/api/v1/subcats/<cat>')
 def getSubCats(cat):
@@ -198,11 +226,6 @@ def search():
         items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id) for i in res], 
         backed='/'
     )
-
-    
-@app.route('/card')
-def card():
-    return render_template('card.html')
 
 
 @app.route('/logout')
