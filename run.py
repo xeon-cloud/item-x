@@ -17,7 +17,6 @@ from data.users import User
 from data.subcategories import SubCat
 from data.items import Item
 
-import auth
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -57,6 +56,9 @@ def authorize(response):
 def handle_csrf_error(e):
     return jsonify({'success': False, 'code': 'csrf'})
 
+@app.route('/alerts')
+def alerts():
+    return render_template('alert.html')
 
 @app.route('/')
 def index():
@@ -69,7 +71,7 @@ def renderCategory(cat):
     res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
     return render_template(
         'index.html', category_name=cats()[cat],
-        owner=cat, sub_categories=[(i.id, i.name) for i in res]
+        owner=cat, categories=cats().items(), sub_categories=[(i.id, i.name) for i in res]
     )
 
 

@@ -1,11 +1,11 @@
-from flask import request, session, flash, make_response, render_template, redirect
+from flask import Blueprint, request, session, flash, make_response, render_template, redirect, abort
+from flask_login import current_user
 import requests
 from PIL import Image
 from io import BytesIO
 import os
 
 import forms
-from init_app import app
 
 import oauth.model as mod
 import oauth.yandex as ya
@@ -17,8 +17,13 @@ from data import db_session
 from data.users import User
 
 
-@app.route('/register', methods=['GET', 'POST'])
+blueprint = Blueprint('auth', __name__, template_folder='templates')
+
+
+@blueprint.route('/auth/register', methods=['GET', 'POST'])
 def sign_up():
+    if current_user.is_authenticated:
+        return redirect('/')
     form = forms.Registration()
     if form.validate_on_submit():
         data = request.form
@@ -63,9 +68,10 @@ def sign_up():
         ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY
     )
 
-@app.route('/login', methods=['GET', 'POST'])
+@blueprint.route('/auth/login', methods=['GET', 'POST'])
 def sign_in():
-
+    if current_user.is_authenticated:
+        return redirect('/')
     form = forms.Login()
     if form.validate_on_submit():
         data = request.form
@@ -89,10 +95,15 @@ def sign_in():
         ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY
     )
 
-@app.route('/callback')
+@blueprint.route('/auth/callback', methods=['GET', 'POST'])
 def callback():
-    code = request.args.get('code')
-    data = ya.authorizeUser(code)
+    try:
+        code = request.args.get('code')  
+        data = ya.authorizeUser(code)
+    except Exception as e:
+        print(f'Callback Error - {e}')
+        abort(403)
+
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.ya_id == int(data['id'])).first()
     if user:

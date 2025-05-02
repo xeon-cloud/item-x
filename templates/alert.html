@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Уведомления</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        #notificationDropdown {
+            background-color: rgba(0, 17, 171, 0.425);
+            position: absolute;
+            right: 0;
+            top: 100%;
+            z-index: 1000;
+            width: 300px; /* Ширина выпадающего меню */
+            max-height: 280px; /* Максимальная высота для трех уведомлений */
+            overflow-y: auto; /* Прокрутка по вертикали */
+        }
+
+        .notification-item {
+            padding: 10px; /* Отступы внутри уведомления */
+        }
+
+        hr {
+            margin: 0; /* Убираем отступы у hr */
+            border: 0; /* Убираем стандартные стили */
+            border-top: 1px solid #0707074f; /* Цвет и стиль разделителя */
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="position-relative">
+        <button id="notificationButton" class="btn btn-light">
+            <i class="fas fa-bell"></i>
+            <span class="badge badge-danger" id="notificationCount">3</span>
+        </button>
+        <div id="notificationDropdown" class="dropdown-menu" style="display: none;">
+            <div class="notification-item p-2">
+                <strong>Уведомление 1</strong>
+                <p>Это текст первого уведомления.</p>
+            </div>
+            <hr class="my-1"> <!-- Разделитель -->
+            <div class="notification-item p-2">
+                <strong>Уведомление 2</strong>
+                <p>Это текст второго уведомления.</p>
+            </div>
+            <hr class="my-1"> <!-- Разделитель -->
+            <div class="notification-item p-2">
+                <strong>Уведомление 3</strong>
+                <p>Это текст третьего уведомления.</p>
+            </div>
+            <hr class="my-1"> <!-- Разделитель -->
+            <div class="notification-item p-2">
+                <strong>Уведомление 4</strong>
+                <p>Это текст четвертого уведомления.</p>
+            </div>
+            <hr class="my-1"> <!-- Разделитель -->
+            <div class="notification-item p-2">
+                <strong>Уведомление 5</strong>
+                <p>Это текст пятого уведомления.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://kit.fontawesome.com/a076d05399.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const notificationButton = document.getElementById('notificationButton');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+
+        notificationButton.addEventListener('click', function(event) {
+            // Получаем координаты кнопки
+            const rect = notificationButton.getBoundingClientRect();
+            
+            // Устанавливаем позицию дропдауна
+            notificationDropdown.style.display = 'block';
+            notificationDropdown.style.position = 'absolute';
+            notificationDropdown.style.left = `${rect.left}px`;
+            notificationDropdown.style.top = `${rect.bottom}px`;
+        });
+
+        // Закрытие дропдауна при клике вне его
+        document.addEventListener('click', function(event) {
+            if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                notificationDropdown.style.display = 'none';
+            }
+        });
+    });
+</script>
+</body>
+</html>
+   
