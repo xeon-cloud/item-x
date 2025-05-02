@@ -137,7 +137,7 @@ def upload():
             id = request.args.get('id')
             if id and id.isdigit():
                 q = db_sess.query(Item).filter(Item.id == int(id)).first()
-                if q and q.owner == current_user.username:
+                if q and q.owner == current_user.id:
                     item = q
                     if request.method != 'POST':
                         form.name.data, form.description.data, form.content.data, form.price.data = (
