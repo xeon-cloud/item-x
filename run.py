@@ -75,7 +75,7 @@ def renderCategory(cat):
     )
 
 
-@app.route('/category/<cat>/<id>')
+@app.route('/category/<cat>/<int:id>')
 def loadServicesCategory(cat, id):
     db_sess = db_session.create_session()
     items = db_sess.query(Item).filter(
@@ -241,9 +241,19 @@ def logout():
     response.delete_cookie('auth_token', path='/')
     return response
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
+
+@app.route('/my_items')
+@login_required
+def my_items():
+    db_sess = db_session.create_session()
+    items = db_sess.query(Item).filter(Item.owner == current_user.id).all()
+    return render_template('my_items.html', items=items, backed='/')
+
 
 if __name__ == '__main__':
     db_session.global_init("db/database.sqlite")
