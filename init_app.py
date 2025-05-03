@@ -1,11 +1,16 @@
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 import os
-import items_api
+import api.items as items
+import api.alerts as alerts
+import api.subcats as subcats
 import auth
 
 app = Flask(__name__)
-app.register_blueprint(items_api.blueprint)
+
+app.register_blueprint(items.blueprint)
+app.register_blueprint(subcats.blueprint)
+app.register_blueprint(alerts.blueprint)
 app.register_blueprint(auth.blueprint)
 
 SECRET_KEY = os.urandom(32)

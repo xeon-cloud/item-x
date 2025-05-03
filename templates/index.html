@@ -34,10 +34,9 @@
       {{ category_name }}
     </button>
     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-      <li><a class="dropdown-item" href="/category/games">Игры</a></li>
-      <li><a class="dropdown-item" href="/category/services">Сервисы</a></li>
-      <li><a class="dropdown-item" href="/category/software">Софт</a></li>
-      <li><a class="dropdown-item" href="/category/subsсribes">Подписки</a></li>
+        {% for target, name in categories %}
+            <li><a class="dropdown-item" href="/category/{{ target }}">{{ name }}</a></li>
+        {% endfor %}
     </ul>
   </div>
 </div>

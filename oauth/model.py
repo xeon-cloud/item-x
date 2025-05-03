@@ -3,7 +3,6 @@ import hashlib
 
 SECRET_KEY = "b07704a225c3866836d15389ae695bfcd19fdb2b7af52fde1e33ff27d1c3f52f"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def createAuthToken(data: dict) -> str:
     to_encode = data.copy()
