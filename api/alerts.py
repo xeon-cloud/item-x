@@ -1,7 +1,10 @@
 from flask import Blueprint, jsonify
+from flask_login import current_user
+
+from api.http_auth import auth
+
 from data import db_session
 from data.alerts import Alert
-from flask_login import current_user, login_required
 
 blueprint = Blueprint('alerts', __name__, template_folder='templates')
 
@@ -20,10 +23,10 @@ def utility_processor():
 
 
 @blueprint.route('/api/alerts/read', methods=['POST'])
-@login_required
+@auth.login_required
 def readAlerts():
     db_sess = db_session.create_session()
-    res = db_sess.query(Alert).filter(Alert.owner == current_user.id and Alert.read == 0).all()
+    res = db_sess.query(Alert).filter(Alert.owner == auth.current_user().id and Alert.read == 0).all()
     for i in res:
         i.read = 1
     db_sess.commit()

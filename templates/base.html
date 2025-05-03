@@ -256,6 +256,11 @@
         } else {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `/api/alerts/read`, true);
+            const authToken = document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1];
+
+            if (authToken) {
+                xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+            }
             xhr.send();
 
             const count = document.getElementById('notificationCount');

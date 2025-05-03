@@ -1,6 +1,6 @@
 import sqlalchemy
+import datetime
 from . import db_session
-
 
 class Item(db_session.SqlAlchemyBase):
     __tablename__ = 'items'
@@ -34,4 +34,7 @@ class Item(db_session.SqlAlchemyBase):
     )
     buyer = sqlalchemy.Column(
         sqlalchemy.Integer
+    )
+    created_date = sqlalchemy.Column(
+        sqlalchemy.DateTime, default=datetime.datetime.now
     )

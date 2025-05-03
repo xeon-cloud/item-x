@@ -29,7 +29,7 @@
 </head>
 <body>
 <div class="form-container">
-    <form method="POST" action="{{ action }}" enctype="multipart/form-data">
+    <form method="POST" id="upForm" action="{{ action }}" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         
         <div class="form-group mb-3">
@@ -44,7 +44,7 @@
             {{ form.content.label(class="form-label fw-bold text-white") }}
             {{ form.content(class="form-control") }}
             <label class="form-label text-white" for="fileInput" style="display: none;" id="fileLabel"></label>
-            <button class="btn btn-primary mt-1" style="cursor:pointer" onclick="$('#fileInput').click()">
+            <button class="btn btn-primary mt-1" style="cursor:pointer" onclick="$('#fileInput').click();event.preventDefault();">
                 {% if form.content_file.data %}
                     Изменить файл
                 {% else %}
@@ -67,14 +67,14 @@
         </div>
         <div class="form-group mb-3">
             <label class="form-label text-white" for="photoInput" style="display: none;" id="photoLabel"></label>
-            <button class="btn btn-primary mt-1" style="cursor:pointer" onclick="$('#photoInput').click()">
+            <button class="btn btn-primary mt-1" style="cursor:pointer" onclick="$('#photoInput').click();event.preventDefault();">
                 {% if form.photo.data %}
                     Изменить фото
                 {% else %}
                     * Выбрать фото *
                 {% endif %}
             </button>
-            {{ form.photo(class="form-control", type="file", id="photoInput", accept="image/png, image/jpeg, image/jpg", style="color: white", style="display:none")}}
+            {{ form.photo(size=20, class="form-control", type="file", id="photoInput", accept="image/png, image/jpeg, image/jpg", style="color: white", style="opacity: 0; pointer-events: none;")}}
         </div>
 
         <div class="text-center">
@@ -110,7 +110,7 @@
         
         if (category) {
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', `/api/v1/subcats/${category}`, true);
+            xhr.open('GET', `/api/subcats/${category}`, true);
 
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {

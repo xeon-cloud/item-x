@@ -18,6 +18,7 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['ITEMS_IMAGES_PATH'] = 'static/images/items'
 app.config['ITEMS_FILES_PATH'] = 'static/item_files'
 app.config['USERS_AVATARS_PATH'] = 'static/images/avatars'
+app.config['JSON_SORT_KEYS'] = False
 
 if not os.path.exists(app.config['ITEMS_IMAGES_PATH']):
     os.makedirs(app.config['ITEMS_IMAGES_PATH'])
