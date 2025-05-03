@@ -30,5 +30,5 @@ class UploadItem(FlaskForm):
     price = DecimalField('Цена', validators=[DataRequired()], places=2)
     category = SelectField('Категория', choices=[('', 'Выберите категорию')], validators=[DataRequired()])
     subcategory = SelectField('Подкатегория', choices=[('', 'Выберите подкатегорию')], validators=[DataRequired()])
-    photo = FileField()
+    photo = FileField(validators=[DataRequired()])
     submit = SubmitField('Загрузить')

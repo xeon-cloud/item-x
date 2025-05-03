@@ -37,9 +37,12 @@ def sign_up():
             else:
                 user = User()
                 if 'ya_login' in session and session['ya_login']:
-                    ya_id, avatar = int(session['id']), 1
+                    ya_id = int(session['id'])
                 else:
-                    ya_id, avatar = None, 0
+                    ya_id = None
+
+                avatar = 1 if session['default_avatar_id'] else 0
+                
                 user.username, user.email, user.hashed_password, user.ya_id, user.avatar = (form.username.data, form.email.data,
                                                                                mod.encodePassword(form.password.data), ya_id, avatar)
                 db_sess = db_session.create_session()
@@ -115,6 +118,7 @@ def callback():
         response.set_cookie('auth_token', mod.createAuthToken({'id': user.id}))
         return response
     session['ya_login'] = True
-    session['id'], session['username'], session['email'], session['avatar'] = (data['id'], data['login'],
-                                                                               data['default_email'], data['default_avatar_id'])
+    session['id'], session['username'], session['email'] = data['id'], data['login'], data['default_email']
+    session['avatar'] = data['default_avatar_id'] if 'default_avatar_id' in data else None
+
     return redirect('/register')

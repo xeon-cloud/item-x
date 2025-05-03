@@ -1,12 +1,15 @@
 from flask import render_template, jsonify, request, session, redirect, make_response, flash, abort, send_file, url_for
+from flask.json import provider
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_wtf.csrf import CSRFError
 from werkzeug.datastructures import FileStorage
+from wtforms.validators import DataRequired
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 import os
 import uuid
 import json
+import io
 
 from forms import UploadItem
 import oauth.model as mod
@@ -18,6 +21,8 @@ from data.subcategories import SubCat
 from data.items import Item
 from data.alerts import Alert
 
+provider.DefaultJSONProvider.sort_keys = False
+provider.DefaultJSONProvider.ensure_ascii = False
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -35,12 +40,12 @@ def cats() -> dict:
         return json.load(f)
 
 
-@app.after_request
-def authorize(response):
+@app.before_request
+def authorize():
     if 'logout' in session and session['logout']:
+        logout_user()
         del session['logout']
-        response.delete_cookie('auth_token', path='/')
-        return response
+        return
     
     if not current_user.is_authenticated:
         auth_token = request.cookies.get('auth_token')
@@ -54,8 +59,6 @@ def authorize(response):
                     login_user(user)
             except Exception as e:
                 print(f"Authorization error: {e}")
-    
-    return response
 
 
 @app.errorhandler(CSRFError)
@@ -137,7 +140,6 @@ def loadCabinet():
 def upload():
     if current_user.is_authenticated:
         form = UploadItem()
-
         db_sess = db_session.create_session()
         item = Item()
 
@@ -146,19 +148,35 @@ def upload():
             id = request.args.get('id')
             if id and id.isdigit():
                 q = db_sess.query(Item).filter(Item.id == int(id)).first()
-                if q and q.owner == current_user.id:
+                if q and q.owner == current_user.id and not q.buyer:
+                    class F(UploadItem):
+                        pass
+
+                    validators = F.photo.kwargs.get('validators')
+                    for validator in validators:
+                        if isinstance(validator, DataRequired):
+                            validators.remove(validator)
+
+                    form = F()
+                    
                     item = q
                     if request.method != 'POST':
                         form.name.data, form.description.data, form.content.data, form.price.data = (
                             item.name, item.about, item.content, item.amount
                         )
+    
                         if item.file:
-                            file = open(f'{app.config["ITEMS_FILES_PATH"]}/{item.file}', 'rb')
-                            form.content_file.data = FileStorage(stream=file, filename=item.file)
-                        photo = open(f'{app.config["ITEMS_IMAGES_PATH"]}/{id}.png', 'rb')
-                        form.photo.data = FileStorage(stream=photo, filename=f'{id}.png')
-                    del form.photo.validators
+                            file_path = f'{app.config["ITEMS_FILES_PATH"]}/{item.file}'
+                            with open(file_path, 'rb') as f:
+                                form.content_file.data = FileStorage(stream=io.BytesIO(f.read()), filename=item.file)
+
+                        photo_path = f'{app.config["ITEMS_IMAGES_PATH"]}/{id}.png'
+                        with open(photo_path, 'rb') as f:
+                            form.photo.data = FileStorage(stream=io.BytesIO(f.read()), filename=f'{id}.png')
+
                     edit = True
+                else:
+                    abort(404)
 
         if request.method == 'POST':
             item.name, item.about, item.content, item.amount, item.category_name, item.subcategory_id, item.owner = (
@@ -174,13 +192,13 @@ def upload():
                 file.save(os.path.join(app.config['ITEMS_FILES_PATH'], name))
                 item.file = name
 
-            if form.photo.data:
-                form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
-            
             if not edit:
                 db_sess.add(item)
 
             db_sess.commit()
+
+            if form.photo:
+                form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
 
             flash(f'Товар успешно {"выставлен" if not edit else "изменен"}', 'success')
             return redirect('cabinet/my_items')
@@ -203,14 +221,6 @@ def download(filename):
     abort(404)
 
 
-@app.route('/api/v1/subcats/<cat>')
-def getSubCats(cat):
-    db_sess = db_session.create_session()
-    res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
-    db_sess.close()
-    return jsonify({'success': True, 'data': [(str(i.id), i.name) for i in res]})
-
-
 @app.route('/deposit', methods=['POST'])
 @login_required
 def deposit():
@@ -220,7 +230,6 @@ def deposit():
         user = db_sess.query(User).filter(User.id == current_user.id).first()
         user.balance += int(amount)
         db_sess.commit()
-        db_sess.close()
         return render_template(
             'cabinet.html', balance=user.balance, backed='/'
         )
@@ -253,9 +262,12 @@ def search():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
     session['logout'] = True
-    return redirect('/')
+    response = make_response(
+        redirect('/')
+    )
+    response.delete_cookie('auth_token')
+    return response
 
 
 @app.errorhandler(404)
