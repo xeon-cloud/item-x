@@ -68,6 +68,7 @@ def sign_up():
         ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY
     )
 
+
 @blueprint.route('/auth/login', methods=['GET', 'POST'])
 def sign_in():
     if current_user.is_authenticated:
@@ -94,6 +95,7 @@ def sign_in():
         'auth/login.html', form=forms.Login(),
         ya_auth_url=ya.renderAuthUrl(), hc_key=HC_SITE_KEY
     )
+
 
 @blueprint.route('/auth/callback', methods=['GET', 'POST'])
 def callback():

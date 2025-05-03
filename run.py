@@ -16,6 +16,7 @@ from data import db_session
 from data.users import User
 from data.subcategories import SubCat
 from data.items import Item
+from data.alerts import Alert
 
 
 login_manager = LoginManager()
@@ -24,17 +25,21 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     db_sess = db_session.create_session()
-    return db_sess.query(User).get(user_id)
+    user = db_sess.query(User).get(user_id)
+    db_sess.close()
+    return user
+
 
 def cats() -> dict:
     with open('categories.json', 'r', encoding='utf-8') as f:
         return json.load(f)
-    
+
 
 @app.after_request
 def authorize(response):
     if 'logout' in session and session['logout']:
         del session['logout']
+        response.delete_cookie('auth_token', path='/')
         return response
     
     if not current_user.is_authenticated:
@@ -44,6 +49,7 @@ def authorize(response):
                 user_id = mod.decodeAuthToken(auth_token)['id']
                 db_sess = db_session.create_session()
                 user = db_sess.query(User).filter(User.id == user_id).first()
+                db_sess.close()
                 if user:
                     login_user(user)
             except Exception as e:
@@ -56,9 +62,6 @@ def authorize(response):
 def handle_csrf_error(e):
     return jsonify({'success': False, 'code': 'csrf'})
 
-@app.route('/alerts')
-def alerts():
-    return render_template('alert.html')
 
 @app.route('/')
 def index():
@@ -69,6 +72,7 @@ def index():
 def renderCategory(cat):
     db_sess = db_session.create_session()
     res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
+    db_sess.close()
     return render_template(
         'index.html', category_name=cats()[cat],
         owner=cat, categories=cats().items(), sub_categories=[(i.id, i.name) for i in res]
@@ -83,6 +87,7 @@ def loadServicesCategory(cat, id):
         (Item.subcategory_id == int(id)) & 
         (Item.buyer == None)
     ).all()
+    db_sess.close()
     return render_template(
         'catalog.html', items=[(str(i.id), i.name, i.about, str(i.amount), cat, id) for i in items],
         backed=f'/category/{cat}'
@@ -105,13 +110,14 @@ def loadItemCard(cat, sub_id, item_id):
                         item.buyer, buyer = current_user.id, current_user
                         db_sess.commit()
                         flash('Товар куплен', 'success')
-
+            db_sess.close()
             return render_template(
                 'card.html', item=item, cat=cats()[cat],
                 subcat=subcat.name, owner=owner, buyer=buyer,
                 backed=f'/category/{cat}/{sub_id}'
             )
-        
+    
+    db_sess.close()
     abort(404)
 
 
@@ -120,6 +126,7 @@ def loadCabinet():
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.id == current_user.id).first()
+        db_sess.close()
         return render_template(
             'cabinet.html', balance=user.balance, backed='/'
         )
@@ -131,10 +138,10 @@ def upload():
     if current_user.is_authenticated:
         form = UploadItem()
 
-        item = Item()
         db_sess = db_session.create_session()
-        edit = False
+        item = Item()
 
+        edit = False
         if request.args.get('action') == 'edit':
             id = request.args.get('id')
             if id and id.isdigit():
@@ -150,6 +157,7 @@ def upload():
                             form.content_file.data = FileStorage(stream=file, filename=item.file)
                         photo = open(f'{app.config["ITEMS_IMAGES_PATH"]}/{id}.png', 'rb')
                         form.photo.data = FileStorage(stream=photo, filename=f'{id}.png')
+                    del form.photo.validators
                     edit = True
 
         if request.method == 'POST':
@@ -165,12 +173,21 @@ def upload():
                 name = '.'.join(name)
                 file.save(os.path.join(app.config['ITEMS_FILES_PATH'], name))
                 item.file = name
+
+            if form.photo.data:
+                form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
             
             if not edit:
                 db_sess.add(item)
 
             db_sess.commit()
-            form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
+
+            flash(f'Товар успешно {"выставлен" if not edit else "изменен"}', 'success')
+            return redirect('cabinet/my_items')
+
+        for target, name in cats().items():
+            form.category.choices.append((target, name))
+        
         return render_template(
             'upload.html', form=form,
             action=f'/upload?action=edit&id={item.id}' if edit else '/upload', backed='/'
@@ -190,25 +207,27 @@ def download(filename):
 def getSubCats(cat):
     db_sess = db_session.create_session()
     res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
+    db_sess.close()
     return jsonify({'success': True, 'data': [(str(i.id), i.name) for i in res]})
 
 
 @app.route('/deposit', methods=['POST'])
+@login_required
 def deposit():
-    if current_user.is_authenticated:
-        amount = request.form.get('amount')
-        if amount:
-            db_sess = db_session.create_session()
-            user = db_sess.query(User).filter(User.id == current_user.id).first()
-            user.balance += int(amount)
-            db_sess.commit()
-            return render_template(
-                'cabinet.html', balance=user.balance, backed='/'
-            )
-        m = 'invalid data'
-    m = 'not auth'
+    amount = request.form.get('amount')
+    if amount:
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+        user.balance += int(amount)
+        db_sess.commit()
+        db_sess.close()
+        return render_template(
+            'cabinet.html', balance=user.balance, backed='/'
+        )
+    m = 'invalid data'
 
     return jsonify({'success': False, 'message': m}), 401
+
 
 @app.route('/search')
 def search():
@@ -223,6 +242,7 @@ def search():
     )
     ).all()
 
+    db_sess.close()
     return render_template(
         'catalog.html', 
         items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id) for i in res], 
@@ -235,11 +255,7 @@ def search():
 def logout():
     logout_user()
     session['logout'] = True
-    response = make_response(
-        redirect('/')
-    )
-    response.delete_cookie('auth_token', path='/')
-    return response
+    return redirect('/')
 
 
 @app.errorhandler(404)
@@ -247,12 +263,12 @@ def page_not_found(e):
     return render_template('404.html'), 404
 
 
-@app.route('/my_items')
+@app.route('/cabinet/my_items')
 @login_required
 def my_items():
     db_sess = db_session.create_session()
     items = db_sess.query(Item).filter(Item.owner == current_user.id).all()
-    return render_template('my_items.html', items=items, backed='/')
+    return render_template('my_items.html', items=items, backed='/cabinet')
 
 
 if __name__ == '__main__':
