@@ -96,7 +96,7 @@
     {% if total == 0 %}
         {% set percentage = "0" %}
     {% else %}
-        {% set percentage = (user.good_reviews / total) * 100 %}
+        {% set percentage = (user.good_reviews // total) * 100 %}
     {% endif %}
     <div class="info-item">
         <i class="fa fa-star"></i>Оценки:<i class="fa fa-thumbs-up" style="margin-left: 7px;"></i><span class="good-reviews" style="margin-right: 8px;">{{ user.good_reviews }}</span><i class="fa fa-thumbs-down"></i><span class="bad-reviews">{{ user.bad_reviews }}</span><span style="margin-left: 5px;">({{ percentage }}%)</span>

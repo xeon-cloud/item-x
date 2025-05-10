@@ -96,7 +96,7 @@
                         {% if total == 0 %}
                             {% set percentage = "0" %}
                         {% else %}
-                            {% set percentage = (current_user.good_reviews / total) * 100 %}
+                            {% set percentage = (current_user.good_reviews // total) * 100 %}
                         {% endif %}
                         <p><i class="fa fa-money-bill-wave"></i> <strong>Баланс:</strong> <span id="balance">{{ balance_rub }}₽ (${{ balance_usd }})</span></p>
                         <div class="separator"></div>
