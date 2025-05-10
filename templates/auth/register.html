@@ -45,7 +45,7 @@
             {{ form.submit() }}
           </div>
           <div class="form-link">
-            <span>Уже есть аккаунт? <a href="/login" class="link login-link">Войти</a></span>
+            <span>Уже есть аккаунт? <a href="{{ url_for('auth.sign_in') }}" class="link login-link">Войти</a></span>
           </div>
           <div class="h-captcha" data-sitekey="{{ hc_key }}" style="text-align: center;margin-top: 10px;"></div>
         </form>

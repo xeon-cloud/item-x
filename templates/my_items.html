@@ -8,10 +8,11 @@
         {% for item in items %}
         <div class="col-md-3 mb-3">
             <div class="card bg-light">
-                <img src="{{ url_for('static', filename='images/items/' + item.id|string + '.png') }}"
-                     class="card-img-top"
+                <div class="card-img-top text-center">
+                    <img src="{{ url_for('static', filename='images/items/' + item.id|string + '.png') }}"
                      alt="{{ item.name }}"
-                     style="height: 200px; object-fit: contain">
+                     style="height: 200px; object-fit: contain;border-radius: 10px;">
+                </div>
 
                 <div class="card-body text-center">
                     <h5 class="card-title">{{ item.name }}</h5>

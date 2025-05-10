@@ -3,48 +3,147 @@
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <style>
     .card {
         margin: 20px;
         border-radius: 15px;
+        background-color: rgba(255, 251, 251, 0.1);
+        color: #ffffffc9;
+        font-size: 1.2rem;
+        font-weight: 7px;
+    }
+
+    .card-header {
+        background-color: rgba(255, 251, 251, 0.2);
+        border-bottom: 1px solid rgba(255, 251, 251, 0.1);
+        font-weight: 10px;
+    }
+
+    .card-footer {
+        background-color: rgba(255, 251, 251, 0.2);
+        border-top: 1px solid rgba(255, 251, 251, 0.1);
+    }
+
+    .profile-info {
+        text-align: left;
+        margin-bottom: 15px;
+    }
+
+    .profile-info i {
+        margin-right: 5px;
+    }
+
+    .good-reviews {
+        color: #28a745;
+        font-weight: bold
+    }
+    .bad-reviews {
+        color: #f42020d1;
+        font-weight: bold
+    }
+
+    .btn i {
+        margin-right: 5px;
+    }
+
+    .button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .button-grid .btn {
+        width: 100%;
+    }
+
+    .button-grid:has(.btn:only-child) {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    .button-grid:has(.btn:only-child) .btn {
+        max-width: 200px;
+    }
+    .separator {
+        height: 1px;
+        background-color: rgba(255, 255, 255, 0.2); /* Прозрачная линия */
+        margin: 10px 0; /* Отступы сверху и снизу */
     }
 </style>
+
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-7">
             <div class="card shadow">
                 <div class="card-header text-center">
-                    <h3>Личный кабинет</h3>
-                </div>
-                <div class="card-body text-center">
-                    <h4>В вашем кошельке: <span id="balance">{{ balance }}₽</span></h4>
-                    <div class="mt-4">
-                        <button class="btn btn-success" data-toggle="modal" data-target="#addFundsModal">
-                            <i class="fa fa-arrow-up"></i>
-                            <span class="ms-2">Пополнить</span>
-                        </button>
-                        <button class="btn btn-secondary">
-                            <i class="fa fa-arrow-down"></i>
-                            <span class="ms-2">Вывести</span>
-                        </button>
-                    </div>
-                    <div class="mt-4">
-                        <button class="btn btn-primary">
-                            <i class="fa fa-history"></i>
-                            <span class="ms-2">История покупок</span>
-                        </button>
-                        <a href="/cabinet/my_items" class="btn btn-info">
-                            <i class="fa fa-shopping-cart"></i>
-                            <span class="ms-2">Мои товары</span>
-                        </a>
+                    <div class="d-flex align-items-center justify-content-center">
+                        <label for="avatar-upload" style="cursor: pointer;">
+                            <img src="{{ url_for('static', filename='images/avatars/' + current_user.id|string + '.png') }}" alt="Аватар" style="width: 60px; height: 60px; border-radius: 50%;">
+                        </label>
+                        <input type="file" id="avatar-upload" style="display: none;" accept="image/*">
+                        <span style="margin-left: 10px;color: aqua;font-weight: bold;">{{ current_user.username }}</span> <i class="fa fa-pencil" style="margin-left: 5px;"></i>
                     </div>
                 </div>
+                {% if current_user.id != 0 %}
+                <div class="card-body">
+                    <div class="profile-info">
+                        {% set total = current_user.good_reviews + current_user.bad_reviews %}
+                        {% if total == 0 %}
+                            {% set percentage = "0" %}
+                        {% else %}
+                            {% set percentage = (current_user.good_reviews / total) * 100 %}
+                        {% endif %}
+                        <p><i class="fa fa-money-bill-wave"></i> <strong>Баланс:</strong> <span id="balance">{{ balance_rub }}₽ (${{ balance_usd }})</span></p>
+                        <div class="separator"></div>
+                        <p><i class="fa fa-chart-line"></i> <strong>Кол-во продаж:</strong> {{ count_sells }}</p>
+                        <div class="separator"></div>
+                        <p><i class="fa fa-coins"></i> <strong>Сумма продаж:</strong> {{ sum_sells }}</p>
+                        <div class="separator"></div>
+                        <p><i class="fa fa-star"></i><strong>Оценки:</strong> <i class="fa fa-thumbs-up"></i><span class="good-reviews" style="margin-right: 10px;">{{ current_user.good_reviews }}</span><i class="fa fa-thumbs-down"></i><span class="bad-reviews">{{ current_user.bad_reviews }}</span> ({{ percentage }}%)</p>
+                        <div class="separator"></div>
+                        <p><i class="fa fa-calendar-alt"></i> <strong>Дата регистрации:</strong> {{ date_register }}</p>
+                    </div>
+                        <div class="card-footer">
+                        <div class="button-grid">
+                            <button class="btn btn-success" data-toggle="modal" data-target="#addFundsModal">
+                                <i class="fa fa-arrow-up"></i>
+                                Пополнить
+                            </button>
+                            <button class="btn btn-secondary">
+                                <i class="fa fa-arrow-down"></i>
+                                Вывести
+                            </button>
+                        </div>
+
+                        <div class="button-grid">
+                            <a href="/cabinet/purchase_history" class="btn btn-primary">
+                                <i class="fa fa-history"></i>
+                                История покупок
+                            </a>
+                            <a href="/cabinet/my_items" class="btn btn-info">
+                                <i class="fa fa-shopping-cart"></i>
+                                Мои товары
+                            </a>
+                        </div>
+
+                        <div class="button-grid">
+                            <a href="" class="btn btn-dark">
+                                <i class="fa fa-key"></i>
+                                API ключ
+                            </a>
+                        </div>
+                    </div>
+                    </div>
+                {% endif %}
                 <div class="card-footer text-center">
                     <a class="btn btn-danger" href="/logout">
                         <i class="fa fa-sign-out-alt"></i>
-                        <span class="ms-2">Выйти</span>
+                        Выйти
                     </a>
                 </div>
             </div>
@@ -57,8 +156,8 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addFundsModalLabel">Пополнение средств</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <h5 class="modal-title" id="addFundsModalLabel"><i class="fa fa-arrow-up"></i> Пополнение средств</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none;">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -66,7 +165,10 @@
                 <form method="POST" action="/deposit">
                     <div class="form-group">
                         <label for="amount">Введите сумму:</label>
-                        <input type="number" class="form-control" min="1" id="amount" name="amount" placeholder="Сумма в ₽" required>
+                        <div class="input-group">
+                            <input type="number" class="form-control" min="1" id="amount" name="amount" placeholder="Сумма в ₽" required>
+                            <span class="input-group-text">₽</span>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
@@ -77,6 +179,4 @@
         </div>
     </div>
 </div>
-
-
 {% endblock %}

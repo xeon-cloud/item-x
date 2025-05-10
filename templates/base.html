@@ -10,6 +10,31 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
+        @font-face {
+            font-family: 'JB-MonoLight';
+            src: url(/static/fonts/JetBrainsMonoNL-Light.ttf);
+        }
+
+        @font-face {
+            font-family: 'JB-ExLight';
+            src: url(/static/fonts/JetBrainsMonoNL-ExtraLight.ttf);
+        }
+
+        @font-face {
+            font-family: 'JB-Regular';
+            src: url(/static/fonts/JetBrainsMono-Regular.ttf);
+        }
+
+        @font-face {
+            font-family: 'JB-Monobold';
+            src: url(/static/fonts/JetBrainsMonoNL-Bold.ttf);
+        }
+
+        * {
+            font-family: 'JB-Regular';
+        }
         .navbar {
             padding: 15px;
             background-color: #007bff; /* Цвет фона для навигационной панели */
@@ -46,7 +71,7 @@
         body {
             margin: 0;
             height: 100vh; /* Задаем высоту на весь экран */
-            background: linear-gradient(45deg, #00ccff, #016175, #04f1f1, #02ecfd);
+            background: linear-gradient(45deg, #013e70, #015060, #014e4efe, #012964);
             background-size: 400% 400%; /* Увеличиваем размер фона для анимации */
             animation: gradientAnimation 15s ease infinite; /* Применяем анимацию */
         }
@@ -102,11 +127,10 @@
         .username {
             font-weight: bold;
             font-size: 18px; /* или любой другой подходящий размер */
-            background: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff);
+            background: aqua;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-size: 700%;
-            animation: rainbow 8s linear infinite;
         }
 
         @keyframes rainbow {
@@ -169,21 +193,25 @@
             </a>
         {% endif %}
         <div class="collapse navbar-collapse" id="navbarNav">
-            <form class="d-flex mx-auto" action="/search">
-                <input class="form-control search-input me-2" type="search" name="query" placeholder="Поиск..." aria-label="Search" required>
-                <button class="btn btn-custom" type="submit">
-                    <i class="fa fa-search"></i>
-                    <span class="ms-2">Найти</span>
-                </button>
-            </form>
+            {% if current_user.id != 0 %}
+                <form class="d-flex mx-auto" action="/search">
+                    <input class="form-control search-input me-2" type="search" name="query" placeholder="Поиск..." aria-label="Search" required>
+                    <button class="btn btn-custom" type="submit">
+                        <i class="fa fa-search"></i>
+                        <span class="ms-2">Найти</span>
+                    </button>
+                </form>
+            {% endif %}
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
-                    <li class="nav-item me-2">
-                        <a class="nav-link btn btn-custom" href="/upload">
-                            <i class="fa fa-upload"></i>
-                            <span class="ms-2">Загрузка товара</span>
-                        </a>
-                    </li>
+                    {% if current_user.id != 0 %}
+                        <li class="nav-item me-2">
+                            <a class="nav-link btn btn-custom" href="/upload">
+                                <i class="fa fa-upload"></i>
+                                <span class="ms-2">Загрузка товара</span>
+                            </a>
+                        </li>
+                        {% endif %}
                     <li class="nav-item me-2">
                         <a class="nav-link btn btn-custom" href="/cabinet">
                             {% if current_user.avatar == 1 %}
@@ -289,7 +317,7 @@
         {% endif %}
         <i class="fas fa-bell"></i>
     </a>
-    <a href="mailto:support@example.com" class="btn btn-primary rounded-circle support-button" title="Поддержка">
+    <a href="/chats" class="btn btn-primary rounded-circle support-button" title="Поддержка">
         <i class="fas fa-comments"></i>
     </a>
 {% endif %}

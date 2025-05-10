@@ -1,7 +1,12 @@
-import datetime
+import time
 import sqlalchemy
 from . import db_session
 
+class RenderAlerts:
+    purchase = (
+        '<span class="ms-2"><i class="fa fa-credit-card" aria-hidden="true" style="margin-right: 5px"></i>Новая продажа</span>',
+        '<a href="/user/{}" style="color: #00FFFF">{}</a> купил ваш товар <a href="/category/{}/{}/{}" style="color: #FFD700">{}</a>. <span style="color: #00FF00">На баланс зачислено {}₽</span>'
+    )
 
 class Alert(db_session.SqlAlchemyBase):
     __tablename__ = 'alerts'
@@ -22,5 +27,5 @@ class Alert(db_session.SqlAlchemyBase):
         sqlalchemy.Integer, default=0
     )
     created_date = sqlalchemy.Column(
-        sqlalchemy.DateTime, default=datetime.datetime.now
+        sqlalchemy.Integer, default=int(time.time())
     )

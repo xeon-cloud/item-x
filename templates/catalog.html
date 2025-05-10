@@ -21,8 +21,71 @@
     .card:hover {
         transform: scale(1.05);
     }
+    .form-control::placeholder{
+        color: #ffffff;
+    }
 </style>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <div class="container">
+    <div class="row mb-3">
+        <div class="col text-center">
+            <button class="btn btn-warning" data-toggle="modal" data-target="#filterModal">
+                <i class="fa fa-filter"></i>
+                <span class="ms-2">Фильтр</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно для фильтрации -->
+    <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content text-white" style="background-color: rgba(255, 251, 251, 0.1);">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Фильтр товаров</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none;background-color: rgba(255, 251, 251, 0.1);color: #ffffff;border-radius: 5px;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="filterForm" method="GET">
+                        <div class="form-group">
+                            {% if request.args.get('query') %}
+                                <input type="hidden" name="query" value="{{ request.args.get('query') }}"></input>
+                            {% endif %}
+                            <label>Тип:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="dateType" id="newProducts" value="new" checked>
+                                <label class="form-check-label" for="newProducts">
+                                    Новые
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="dateType" id="oldProducts" value="old">
+                                <label class="form-check-label" for="oldProducts">
+                                    Старые
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="priceFrom">Цена от:</label>
+                            <input type="number" class="form-control" style="background-color: rgba(255, 251, 251, 0.1);color: #ffffff;" id="priceFrom" placeholder="Введите минимальную цену" name="minPrice" value="{{ request.args.get('minPrice') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="priceTo">Цена до:</label>
+                            <input type="number" class="form-control" style="background-color: rgba(255, 251, 251, 0.1);color: #ffffff;" id="priceTo" placeholder="Введите максимальную цену" name="maxPrice" value="{{ request.args.get('maxPrice') }}">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Применить</button>
+                            <button class="btn btn-danger" onclick="event.preventDefault();resetURL();">Сбросить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         {% if items %}
             {% for id, name, about, amount, cat, subcat in items %}
@@ -40,10 +103,46 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="text-center mt-5" style="color: rgb(255, 255, 255);font-size: 20px;">
-                <span>Товары не найдены</span>
-            </div>
-        {% endif %}
-    </div>
+        <div class="text-center mt-5" style="color: rgb(255, 255, 255);font-size: 20px;">
+            <span>Товары не найдены</span>
+        </div>
+    {% endif %}
 </div>
+</div>
+
+<script>
+function applyFilter() {
+    // Получаем значения из формы
+    const priceFrom = document.getElementById('priceFrom').value;
+    const priceTo = document.getElementById('priceTo').value;
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+
+    // Здесь можно добавить логику для применения фильтрации
+    // Например, отправить данные на сервер или обновить страницу с параметрами
+
+    console.log('Фильтры:', { priceFrom, priceTo, dateFrom, dateTo });
+
+    // Закрываем модальное окно после применения фильтра
+    $('#filterModal').modal('hide');
+}
+
+function resetURL() {
+  const currentURL = new URL(window.location.href);
+  let queryParamValue = currentURL.searchParams.get("query"); // Получаем значение параметра "query"
+
+  let newURL;
+
+  if (queryParamValue !== null) {
+    // Если параметр "query" существует, сохраняем только его
+    newURL = currentURL.pathname + "?query=" + queryParamValue;
+  } else {
+    // Если параметра "query" нет, переходим по pathname
+    newURL = currentURL.pathname;
+  }
+
+  window.location.href = newURL;
+}
+</script>
+
 {% endblock %}

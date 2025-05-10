@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Регистрация</title>
+  <title>Авторизация</title>
   <!-- CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
@@ -44,7 +44,7 @@
             {{ form.submit }}
           </div>
           <div class="form-link">
-            <span>Еще нет аккаунта? <a href="/register" class="link signup-link">Регистрация</a></span>
+            <span>Еще нет аккаунта? <a href="{{ url_for('auth.sign_up') }}" class="link signup-link">Регистрация</a></span>
           </div>
           <div class="h-captcha" data-sitekey="{{ hc_key }}" style="text-align: center;margin-top: 10px;"></div>
         </form>

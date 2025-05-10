@@ -132,23 +132,25 @@
     {% endif %}
     <div class="button-container d-flex flex-column">
         <div class="separator"></div>
-        {% if owner.id != current_user.id and not buyer and buyer.id != current_user.id %}
+        {% if (owner.id != current_user.id and not buyer and buyer.id != current_user.id) or not current_user.is_authenticated %}
             <a href="/category/{{ item.category_name }}/{{ item.subcategory_id }}/{{ item.id }}?action=buy" class="btn btn-buy mt-3" id="buyTarget">
                 <i class="fa fa-shopping-cart" aria-hidden="true"></i>
                 <span class="ms-2">Приобрести</span>
             </a>
         {% else %}
-            <div class="section-title">
-                <i class="fa fa-info-circle" aria-hidden="true"></i>
-                <span class="ms-2">Содержание</span>
-            </div>
-            <span class="fs-3">{{ item.content }}</span>
-            <div class="separator"></div>
-            {% if item.file %}
-                <a href="/file/download/{{ item.file }}" class="btn btn-buy mt-3" id="buyTarget">
-                    <i class="fa fa-download" aria-hidden="true"></i>
-                    <span class="ms-2">Скачать</span>
-                </a>
+            {% if current_user.id == owner.id or current_user.id == buyer.id %}
+                <div class="section-title">
+                    <i class="fa fa-info-circle" aria-hidden="true"></i>
+                    <span class="ms-2">Содержание</span>
+                </div>
+                <span class="fs-3">{{ item.content }}</span>
+                <div class="separator"></div>
+                {% if item.file %}
+                    <a href="/file/download/{{ item.file }}" class="btn btn-buy mt-3" id="buyTarget">
+                        <i class="fa fa-download" aria-hidden="true"></i>
+                        <span class="ms-2">Скачать</span>
+                    </a>
+                {% endif %}
             {% endif %}
             {% if not buyer and owner.id == current_user.id %}
                 <a href="/upload?action=edit&id={{ item.id }}" class="btn btn-edit mt-3">

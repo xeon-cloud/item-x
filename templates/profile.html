@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    body {
+        background-color: #343a40; /* Темный фон */
+        color: white; /* Белый текст */
+    }
+    .profile-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 30px; /* Увеличено расстояние внутри карточки */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px; /* Увеличена ширина карточки */
+        margin: auto;
+        text-align: center;
+        background-color: #495057; /* Фон карточки */
+    }
+    .avatar {
+        width: 120px; /* Увеличен размер аватара */
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 20px; /* Увеличено расстояние под аватаром */
+    }
+    .info-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px; /* Увеличено расстояние между элементами */
+    }
+    .info-item i {
+        margin-right: 10px; /* Отступ между иконкой и текстом */
+    }
+    hr {
+        border-top: 1px solid #e0e0e0; /* Цвет разделителя */
+        margin: 20px 0; /* Увеличены отступы сверху и снизу */
+    }
+    .ratings {
+        margin-top: 20px; /* Отступ сверху для раздела оценок */
+    }
+    .good-reviews {
+        color: #28a745;
+        font-weight: bold
+    }
+    .bad-reviews {
+        color: #f42020d1;
+        font-weight: bold
+    }
+    .online {
+        color: #28a745; /* Зеленый цвет для Online */
+        font-size: 17px;
+    }
+    .offline {
+        color: #dc3545;
+        font-size: 17px;
+    }
+
+    .last-activity {
+        font-size: 17px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container mt-5">
+<div class="profile-card">
+    {% if user.avatar == 1 %}
+        <img src="{{ url_for('static', filename='images/avatars/' + user.id|string + '.png') }}" class="avatar">
+    {% else %}
+        <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="avatar">
+    {% endif %}
+    <h3 class="mb-4" style="color: aqua;">{{ user.username }}</h3>
+    {{ user.format_activity()[0] | safe }}
+    <hr>
+    
+    <div class="info-item">
+        <i class="fas fa-shopping-cart"></i>
+        <span><strong>Количество продаж:</strong> {{ count_sells }}</span>
+    </div>
+    <hr>
+    
+    <div class="info-item">
+        <i class="fas fa-coins"></i>
+        <span><strong>Сумма продаж:</strong> {{ sum_sells }}</span>
+    </div>
+    <hr>
+    
+    <div class="info-item">
+        <i class="fas fa-calendar-alt"></i>
+        <span><strong>Дата регистрации:</strong> {{ date_register }}</span>
+    </div>
+    <hr>
+
+    {% set total = user.good_reviews + user.bad_reviews %}
+    {% if total == 0 %}
+        {% set percentage = "0" %}
+    {% else %}
+        {% set percentage = (user.good_reviews / total) * 100 %}
+    {% endif %}
+    <div class="info-item">
+        <i class="fa fa-star"></i>Оценки:<i class="fa fa-thumbs-up" style="margin-left: 7px;"></i><span class="good-reviews" style="margin-right: 8px;">{{ user.good_reviews }}</span><i class="fa fa-thumbs-down"></i><span class="bad-reviews">{{ user.bad_reviews }}</span><span style="margin-left: 5px;">({{ percentage }}%)</span>
+    </div>
+    
+    <hr>
+
+    <a href="mailto:user@example.com" class="btn btn-primary">Написать</a>
+</div>
+</div>
+
+{% endblock %}
