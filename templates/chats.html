@@ -126,6 +126,19 @@
     .message-input-area {
         margin-top: auto;
     }
+
+    .mes-badge {
+        background-color: red; /* Красный фон */
+        color: white; /* Белый текст */
+        border-radius: 50%; /* Круглая форма */
+        padding: 3px 8px; /* Отступы */
+        font-size: 12px; /* Размер шрифта */
+        margin-right: 0px;
+        margin-left: auto;
+    }
+    .active {
+        background-color: #7171719f;
+    }
 </style>
 <div class="container chat-container">
     <div class="row h-100">
@@ -136,23 +149,26 @@
 
             <div class="user-list-container">
                 <div class="user-list">
-                    {% for user in data %}
+                    {% for user, unr in data %}
                         <a href="/chat/{{ user.id }}" style="text-decoration: none;color: #ffffff;">
-                            <div class="user-item">
+                            <div class="user-item {{ 'active' if user.id == active_user.id else ''}}">
                                 {% if user.avatar == 1 %}
                                     <img src="{{ url_for('static', filename='images/avatars/' + user.id|string + '.png') }}" class="avatar">
                                 {% else %}
                                     <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="avatar">
                                 {% endif %}
                                 {{ user.username }}
-                                {% if user.id != 0 %}
+                                {% if user.id != 0 %} 
                                     <span class="status {{ 'online' if user.format_activity()[1] == 1 else 'offline' }}-status"></span>
+                                {% endif %}
+                                {% if unr > 0 %}
+                                    <span class="mes-badge">{{ unr }}</span>
                                 {% endif %}
                             </div>
                         </a>
                     {% endfor %}
                 </div>
-            </div>  <!-- Container *ends* here -->
+            </div> 
         </div>
 
         <div class="col-md-8 d-flex flex-column">
@@ -161,48 +177,100 @@
                     <h4>{{ active_user.username }}</h4>
                     {% if active_user.id != 0 %}
                         <p>{{ active_user.format_activity()[0] | safe }}</p>
-                    {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="chat-messages mt-3" id="chat-messages">
+    
                 </div>
-                <div class="chat-messages mt-3">
-                    {% for message in active_chat %}
-                    <div class="message-container {{ 'sent' if current_user.id == message.get('from') else '' }}">
-                        <div class="message-bubble {{ 'message-sent' if current_user.id == message.get('from') else '' }}">
-                            {{ message.get('content') }}
-                            <span class="message-time">{{ message.get('time') }}</span>
+                <div class="message-input-area mt-auto">
+                    <form>
+                        <div class="input-group mt-3">
+                            <input type="text" class="form-control" placeholder="Сообщение..." id="message-input">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit" id="send-button" onclick="event.preventDefault();">
+                                    <i class="fa fa-paper-plane"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="message-input-area mt-auto">
-                <div class="input-group mt-3">
-                    <input type="text" class="form-control" placeholder="Сообщение..." id="message-input">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="button" id="send-button">
-                            <i class="fa fa-paper-plane"></i>
-                        </button>
-                    </div>
+                    </form>
                 </div>
-            </div>
-
-        {% else %}
-            <span>Выберите чат</span>
-        {% endif %}
+    
+            {% else %}
+                <span>Выберите чат</span>
+            {% endif %}
+        </div>
     </div>
-</div>
-</div>
+    </div>
+    
+    {% if active_user and active_chat %}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sendButton = document.getElementById('send-button');
+            const messageInput = document.getElementById('message-input');
+            const chatMessages = document.getElementById('chat-messages');
+            const activeUserId = "{{ active_user.id }}";
+    
+        function fetchMessages() {
+            const apiUrl = `/api/messages/${activeUserId}`;
+    
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    chatMessages.innerHTML = '';
+                    data.messages.forEach(message => {
+                        appendMessage(message);
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    console.error('Error fetching messages:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching messages:', error);
+            });
+    }
 
-{% if active_user and active_chat %}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const sendButton = document.getElementById('send-button');
-        const messageInput = document.getElementById('message-input');
-        const chatMessages = document.querySelector('.chat-messages');
+    fetchMessages();
+
+    function appendMessage(message) {
+        const messageContainer = document.createElement('div');
+        messageContainer.classList.add('message-container');
+
+        if ("{{ current_user.id }}" == message.from) {
+            messageContainer.classList.add('sent');
+        }
+
+        const messageBubble = document.createElement('div');
+        messageBubble.classList.add('message-bubble');
+
+        if ("{{ current_user.id }}" == message.from) {
+            messageBubble.classList.add('message-sent');
+        }
+        messageBubble.textContent = message.content;
+
+        const messageTime = document.createElement('span');
+        messageTime.classList.add('message-time');
+        messageTime.textContent = message.time;
+
+        messageBubble.appendChild(messageTime);
+        messageContainer.appendChild(messageBubble);
+        chatMessages.appendChild(messageContainer);
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
 
     sendButton.addEventListener('click', function() {
         const messageContent = messageInput.value.trim();
 
         if (messageContent !== '') {
-            const activeUserId = "{{ active_user.id }}";
+
             const apiUrl = `/api/messages/${activeUserId}/send`;
 
             fetch(apiUrl, {
@@ -222,8 +290,8 @@
             })
             .then(data => {
                 console.log('Message sent successfully:', data);
-                appendNewMessage(messageContent);
                 messageInput.value = '';
+                fetchMessages();
             })
             .catch(error => {
                 console.error('Error sending message:', error);
@@ -232,28 +300,7 @@
         }
     });
 
-    function appendNewMessage(message) {
-        const messageContainer = document.createElement('div');
-        messageContainer.classList.add('message-container', 'sent');
-
-        const messageBubble = document.createElement('div');
-        messageBubble.classList.add('message-bubble', 'message-sent');
-        messageBubble.textContent = message;
-
-        const messageTime = document.createElement('span');
-        messageTime.classList.add('message-time');
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        messageTime.textContent = `${hours}:${minutes}`;
-
-        messageBubble.appendChild(messageTime);
-        messageContainer.appendChild(messageBubble);
-        chatMessages.appendChild(messageContainer);
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    }
+        setInterval(fetchMessages, 5000);
 
     });
     </script>

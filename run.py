@@ -90,7 +90,12 @@ def index():
 
 @app.route('/chats')
 def chat():
-    return render_template('chats.html', data=chats.getDialogs())
+    return render_template(
+        'chats.html',
+        data=chats.getDialogs(),
+        active_user=None,
+        backed='/'
+    )
 
 @app.route('/chat/<int:id>')
 def userChat(id):
@@ -98,11 +103,13 @@ def userChat(id):
     user = db_sess.query(User).filter(User.id == id).first()
     if not user:
         return redirect('/chats')
+    messages, dialogs = chats.getMessages(id), chats.getDialogs()
     return render_template(
         'chats.html',
-        data=chats.getDialogs(),
-        active_chat=chats.getMessages(id),
-        active_user=user
+        data=dialogs,
+        active_chat=messages,
+        active_user=user,
+        backed='/'
     )
 
 
@@ -167,7 +174,7 @@ def send_email(to, subject, template):
 
 
 def send_purchase_confirmation_email(email, item_name, item_price):
-    template = render_template('email_template.html', item_name=item_name, item_price=item_price)
+    template = render_template('email.html', item_name=item_name, item_price=item_price)
     send_email(email, 'Подтверждение покупки', template)
 
 
@@ -177,7 +184,7 @@ def purchase_history():
     db_sess = db_session.create_session()
     purchases = db_sess.query(Purchase).filter(Purchase.user_id == current_user.id).order_by(Purchase.purchase_date.desc()).all()
     db_sess.close()
-    return render_template('purchases_history.html', purchases=purchases)
+    return render_template('purchases_history.html', purchases=purchases, backed='/cabinet')
 
 
 @app.route('/category/<cat>/<sub_id>/<item_id>')
@@ -200,8 +207,10 @@ def loadItemCard(cat, sub_id, item_id):
                     
                     if owner.id != current_user.id:
                         if current_user.balance >= item.amount:
-                            current_user.balance -= item.amount
-                            item.buyer, buyer = current_user.id, current_user
+                            buyer = db_sess.query(User).filter(User.id == current_user.id).first()
+                            buyer.balance = buyer.balance - item.amount
+                            owner.balance += item.amount
+                            item.buyer, buyer = buyer.id, current_user
 
                             render = render_alerts.purchase
 
@@ -342,7 +351,7 @@ def upload():
                 form.category.data, int(form.subcategory.data), current_user.id
             )
 
-            if form.content_file:
+            if form.content_file.data:
                 file = form.content_file.data
                 name = secure_filename(file.filename).split('.')
                 name[0] = str(uuid.uuid4())

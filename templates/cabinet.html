@@ -83,7 +83,11 @@
                 <div class="card-header text-center">
                     <div class="d-flex align-items-center justify-content-center">
                         <label for="avatar-upload" style="cursor: pointer;">
-                            <img src="{{ url_for('static', filename='images/avatars/' + current_user.id|string + '.png') }}" alt="Аватар" style="width: 60px; height: 60px; border-radius: 50%;">
+                            {% if current_user.avatar == 1 %}
+                                <img src="{{ url_for('static', filename='images/avatars/' + current_user.id|string + '.png') }}" style="width: 60px; height: 60px; border-radius: 50%;">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='images/avatars/default.png') }}" style="width: 60px; height: 60px; border-radius: 50%;">
+                            {% endif %}
                         </label>
                         <input type="file" id="avatar-upload" style="display: none;" accept="image/*">
                         <span style="margin-left: 10px;color: aqua;font-weight: bold;">{{ current_user.username }}</span> <i class="fa fa-pencil" style="margin-left: 5px;"></i>

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify
 from flask_login import current_user
 import datetime
+from sqlalchemy import or_
 
 from api.http_auth import auth
 
@@ -33,7 +34,10 @@ def format_timestamp(timestamp):
 def utility_processor():
     def getAlerts():
         db_sess = db_session.create_session()
-        res = db_sess.query(Alert).filter(Alert.owner == current_user.id or Alert.owner == 0).all()
+        res = db_sess.query(Alert).filter(or_(
+            Alert.owner == current_user.id,
+            Alert.owner == 0
+        )).all()
         db_sess.close()
         unread = sum([1 for i in res if i.read == 0])
         return [
