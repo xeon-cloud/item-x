@@ -15,6 +15,7 @@ import hcaptcha.model as cap
 
 from data import db_session
 from data.users import User
+from api.chats import sendMessage
 
 
 blueprint = Blueprint('auth', __name__, template_folder='templates')
@@ -38,13 +39,14 @@ def sign_up():
                 user = User()
                 if 'ya_login' in session and session['ya_login']:
                     ya_id = int(session['id'])
+                    avatar = 1 if session['avatar'] else 0
                 else:
                     ya_id = None
-
-                avatar = 1 if session['default_avatar_id'] else 0
+                    avatar = 0
                 
-                user.username, user.email, user.hashed_password, user.ya_id, user.avatar = (form.username.data, form.email.data,
-                                                                               mod.encodePassword(form.password.data), ya_id, avatar)
+                user.username, user.email, user.ya_id, user.avatar = (form.username.data, form.email.data, ya_id, avatar)
+                user.set_password(form.password.data)
+
                 db_sess = db_session.create_session()
                 db_sess.add(user)
                 db_sess.commit()
@@ -59,6 +61,11 @@ def sign_up():
                     redirect('/')
                 )
                 response.set_cookie('auth_token', mod.createAuthToken({'id': user.id}))
+                sendMessage(
+                    user.id,
+                    'Здравствуйте! Спасибо за регистрацию на нашем сервисе.',
+                    as_support=True
+                )
                 return response
         else:
             flash('Пройдите проверку на робота!', 'error')
@@ -83,7 +90,7 @@ def sign_in():
         if captchaResponse and cap.validateCaptcha(captchaResponse):
             db_sess = db_session.create_session()
             user = db_sess.query(User).filter(User.username == form.username.data).first()
-            if user and mod.encodePassword(form.password.data) == user.hashed_password:
+            if user and user.check_password(form.password.data):
                 response = make_response(
                     redirect('/')
                 )
@@ -121,4 +128,4 @@ def callback():
     session['id'], session['username'], session['email'] = data['id'], data['login'], data['default_email']
     session['avatar'] = data['default_avatar_id'] if 'default_avatar_id' in data else None
 
-    return redirect('/register')
+    return redirect('/auth/register')

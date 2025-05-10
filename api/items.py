@@ -2,15 +2,25 @@ from flask import Blueprint, jsonify, request
 import base64
 import uuid
 import os
+import json
 
 from api.http_auth import auth
 
 from data import db_session
 from data.items import Item
+from data.subcategories import SubCat
 
 
 blueprint = Blueprint('items', __name__, template_folder='templates')
 
+def cats() -> dict:
+    with open('categories.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+    
+def subCats() -> list:
+    db_sess = db_session.create_session()
+    res = db_sess.query(SubCat).all()
+    return [i.id for i in res]
 
 def item_to_dict(item: Item):
     return {
@@ -68,6 +78,18 @@ def createItems():
 
         if not data.get('image'):
             raise Exception('Item image required')
+        
+        if data.get('categoryName') not in cats().keys():
+            raise Exception(f'Сategory must be one of: {", ".join(list(cats().keys()))}')
+        
+        if data.get('subCategoryId'):
+            if isinstance(data.get('subCategoryId'), int):
+                if not data.get('subCategoryId') in subCats():
+                    raise Exception('Non-existent SubCategory id')
+            else:
+                raise Exception('Invalid SubCategory id type')
+        else:
+            raise Exception('SubCategory id required')
 
         item = Item(
             name=data['name'],
@@ -98,8 +120,10 @@ def createItems():
         return jsonify({
             'success': True,
             'message': 'Item created',
-            'id': item.id,
-            'url': f'/category/{data.get("categoryName")}/{data.get("subCategoryId")}/{item.id}'
+            'data': {
+                'id': item.id,
+                'url': f'/category/{data.get("categoryName")}/{data.get("subCategoryId")}/{item.id}'
+            }
         }), 201
 
     except Exception as e:
@@ -159,8 +183,12 @@ def updateItem(item_id):
                 saveBase64(contentFileData, file_name, 'static/item_files')
             else:
                 raise Exception('Extension for content file required')
+            
         if data.get('categoryName'):
-            item.category_name = data.get('categoryName')
+            if data.get('categoryName') in cats().keys():
+                item.category_name = data.get('categoryName')
+            else:
+                raise Exception(f'Сategory must be one of: {", ".join(list(cats().keys()))}')
 
         if data.get('subCategoryId'):
             item.subcategory_id = data.get('subCategoryId')

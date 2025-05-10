@@ -1,5 +1,5 @@
 import sqlalchemy
-import datetime
+import time
 from . import db_session
 
 class Item(db_session.SqlAlchemyBase):
@@ -36,5 +36,5 @@ class Item(db_session.SqlAlchemyBase):
         sqlalchemy.Integer
     )
     created_date = sqlalchemy.Column(
-        sqlalchemy.DateTime, default=datetime.datetime.now
+        sqlalchemy.Integer, default=int(time.time())
     )

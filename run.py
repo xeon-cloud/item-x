@@ -6,6 +6,7 @@ from werkzeug.datastructures import FileStorage
 from wtforms.validators import DataRequired
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
+import time
 import os
 import uuid
 import json
@@ -15,11 +16,13 @@ from forms import UploadItem
 import oauth.model as mod
 from init_app import app
 
+import converter
 from data import db_session
 from data.users import User
 from data.subcategories import SubCat
 from data.items import Item
-from data.alerts import Alert
+from data.alerts import Alert, RenderAlerts
+import api.chats as chats
 
 provider.DefaultJSONProvider.sort_keys = False
 provider.DefaultJSONProvider.ensure_ascii = False
@@ -35,6 +38,8 @@ def load_user(user_id):
     return user
 
 
+render_alerts = RenderAlerts()
+
 def cats() -> dict:
     with open('categories.json', 'r', encoding='utf-8') as f:
         return json.load(f)
@@ -47,18 +52,23 @@ def authorize():
         del session['logout']
         return
     
-    if not current_user.is_authenticated:
-        auth_token = request.cookies.get('auth_token')
-        if auth_token:
-            try:
-                user_id = mod.decodeAuthToken(auth_token)['id']
-                db_sess = db_session.create_session()
-                user = db_sess.query(User).filter(User.id == user_id).first()
-                db_sess.close()
-                if user:
+    auth_token = request.cookies.get('auth_token')
+    if auth_token:
+        try:
+            db_sess = db_session.create_session()
+            user_id = mod.decodeAuthToken(auth_token)['id']
+            user = db_sess.query(User).filter(User.id == user_id).first()
+            if user:
+                if current_user.is_anonymous:
                     login_user(user)
-            except Exception as e:
-                print(f"Authorization error: {e}")
+                    return
+                user.last_activity = int(time.time())
+                db_sess.commit()
+        except Exception as e:
+            db_sess.rollback()
+            print(f"Authorization error: {e}")
+        finally:
+            db_sess.close()
 
 
 @app.errorhandler(CSRFError)
@@ -68,11 +78,37 @@ def handle_csrf_error(e):
 
 @app.route('/')
 def index():
-    return redirect(f'/category/{list(cats().keys())[0]}')
+    # если вход через поддержку то пинаем работать
+    if current_user.is_authenticated and current_user.id == 0:
+        return redirect('/chats')
+    return redirect('/category/services')
+
+
+@app.route('/chats')
+def chat():
+    return render_template('chats.html', data=chats.getDialogs())
+
+@app.route('/chat/<int:id>')
+def userChat(id):
+    db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.id == id).first()
+    if not user:
+        return redirect('/chats')
+    return render_template(
+        'chats.html',
+        data=chats.getDialogs(),
+        active_chat=chats.getMessages(id),
+        active_user=user
+    )
 
 
 @app.route('/category/<cat>')
 def renderCategory(cat):
+    # если вход через поддержку то пинаем работать
+    if current_user.is_authenticated and current_user.id == 0:
+        return redirect('/chats')
+    if cat not in cats().keys():
+        abort(404)
     db_sess = db_session.create_session()
     res = db_sess.query(SubCat).filter(SubCat.category == cat).all()
     db_sess.close()
@@ -84,13 +120,32 @@ def renderCategory(cat):
 
 @app.route('/category/<cat>/<int:id>')
 def loadServicesCategory(cat, id):
+    # если вход через поддержку то пинаем работать
+    if current_user.is_authenticated and current_user.id == 0:
+        return redirect('/chats')
     db_sess = db_session.create_session()
     items = db_sess.query(Item).filter(
         (Item.category_name == cat) & 
         (Item.subcategory_id == int(id)) & 
         (Item.buyer == None)
     ).all()
+
+    # режим фильтра
+    mnPrice, mxPrice = request.args.get('minPrice'), request.args.get('maxPrice')
+    if mnPrice and mxPrice and mnPrice.isdigit() and mnPrice.isdigit() and int(mnPrice) <= int(mxPrice):
+        for i, j in enumerate(items):
+            amount = j.amount
+            if not (amount >= int(mnPrice) and amount <= int(mxPrice)):
+                items.pop(i)
+
+    dateType = request.args.get('dateType')
+    items = sorted(
+        items, key=lambda item: item.created_date,
+        reverse=False if dateType == 'old' else True
+    )
+
     db_sess.close()
+
     return render_template(
         'catalog.html', items=[(str(i.id), i.name, i.about, str(i.amount), cat, id) for i in items],
         backed=f'/category/{cat}'
@@ -99,29 +154,56 @@ def loadServicesCategory(cat, id):
 
 @app.route('/category/<cat>/<sub_id>/<item_id>')
 def loadItemCard(cat, sub_id, item_id):
+    # если вход через поддержку то пинаем работать
+    if current_user.is_authenticated and current_user.id == 0:
+        return redirect('/chats')
     db_sess = db_session.create_session()
-    item = db_sess.query(Item).filter(Item.id == int(item_id)).first()
-    subcat = db_sess.query(SubCat).filter(SubCat.id == int(sub_id)).first()
-    if item and subcat and cat in list(cats().keys()):
-        owner = db_sess.query(User).filter(User.id == item.owner).first()
-        buyer = db_sess.query(User).filter(User.id == item.buyer).first()
-        if not item.buyer or current_user.id in [item.buyer, owner.id]:
-            if request.args.get('action') == 'buy' and not item.buyer:
-                if owner.id != current_user.id:
-                    if current_user.balance >= item.amount:
-                        current_user.balance -= item.amount
-                        item.buyer, buyer = current_user.id, current_user
-                        db_sess.commit()
-                        flash('Товар куплен', 'success')
-            db_sess.close()
-            return render_template(
-                'card.html', item=item, cat=cats()[cat],
-                subcat=subcat.name, owner=owner, buyer=buyer,
-                backed=f'/category/{cat}/{sub_id}'
-            )
-    
-    db_sess.close()
-    abort(404)
+    try:
+        item = db_sess.query(Item).filter(Item.id == int(item_id)).first()
+        subcat = db_sess.query(SubCat).filter(SubCat.id == int(sub_id)).first()
+        if item and subcat and cat in list(cats().keys()):
+            owner = db_sess.query(User).filter(User.id == item.owner).first()
+            buyer = db_sess.query(User).filter(User.id == item.buyer).first()
+            if not item.buyer or current_user.id in [item.buyer, owner.id]:
+                if request.args.get('action') == 'buy' and not item.buyer:
+                    # пинаем на авторизацию если лезет покупать при гостевом входе
+                    if current_user.is_anonymous:
+                        return redirect('/auth/login')
+                    
+                    if owner.id != current_user.id:
+                        if current_user.balance >= item.amount:
+                            current_user.balance -= item.amount
+                            item.buyer, buyer = current_user.id, current_user
+
+                            render = render_alerts.purchase
+
+                            alert = Alert(
+                                owner=item.owner,
+                                header=render[0],
+                                content=render[1].format(
+                                    current_user.id, current_user.username,
+                                    cat, sub_id, item_id,
+                                    item.amount
+                                )
+                            )
+
+                            db_sess.add(alert)
+                            db_sess.commit()
+                            flash('Товар куплен', 'success')
+                        else:
+                            flash('На балансе недостаточно средств', 'danger')
+                return render_template(
+                    'card.html', item=item, cat=cats()[cat],
+                    subcat=subcat.name, owner=owner, buyer=buyer,
+                    backed=f'/category/{cat}/{sub_id}'
+                )
+        
+        abort(404)
+    except Exception as e:
+        db_sess.rollback()
+        print(f'Item Error: {e}')
+    finally:
+        db_sess.close()
 
 
 @app.route('/cabinet')
@@ -129,16 +211,47 @@ def loadCabinet():
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.id == current_user.id).first()
+
+        sells = db_sess.query(Item).filter(Item.owner == user.id and Item.buyer).all()
+        count_sells = len(sells)
+        sum_sells = sum([i.amount for i in sells])
+
         db_sess.close()
         return render_template(
-            'cabinet.html', balance=user.balance, backed='/'
+            'cabinet.html',
+            balance_rub=user.balance, balance_usd=f'{converter.convert(user.balance):.2f}',
+            count_sells=count_sells, sum_sells=f'{sum_sells}₽ (${converter.convert(sum_sells):.2f})',
+            date_register=user.format_date(),
+            backed='/'
         )
     return redirect('/')
+
+@app.route('/user/<int:id>')
+def loadUser(id):
+    db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.id == id).first()
+    if not user:
+        abort(404)
+
+    sells = db_sess.query(Item).filter(Item.owner == user.id and Item.buyer).all()
+    count_sells = len(sells)
+    sum_sells = sum([i.amount for i in sells])
+
+    return render_template(
+        'profile.html',
+        user=user, count_sells=count_sells,
+        sum_sells=f'{sum_sells}₽ (${converter.convert(sum_sells):.2f})',
+        date_register=user.format_date(), now=int(time.time()),
+        backed='/'
+    )
 
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if current_user.is_authenticated:
+        # если вход через поддержку то пинаем работать
+        if current_user.id == 0:
+            return redirect('/chats')
         form = UploadItem()
         db_sess = db_session.create_session()
         item = Item()
@@ -147,8 +260,9 @@ def upload():
         if request.args.get('action') == 'edit':
             id = request.args.get('id')
             if id and id.isdigit():
-                q = db_sess.query(Item).filter(Item.id == int(id)).first()
-                if q and q.owner == current_user.id and not q.buyer:
+                req = db_sess.query(Item).filter(Item.id == int(id)).first()
+                if req and req.owner == current_user.id and not req.buyer:
+                    # динамически убираем валидатор у фото в режиме едита
                     class F(UploadItem):
                         pass
 
@@ -159,10 +273,13 @@ def upload():
 
                     form = F()
                     
-                    item = q
+                    item = req
                     if request.method != 'POST':
-                        form.name.data, form.description.data, form.content.data, form.price.data = (
-                            item.name, item.about, item.content, item.amount
+                        for subcat in db_sess.query(SubCat).filter(SubCat.category == item.category_name).all():
+                            form.subcategory.choices.append((subcat.id, subcat.name))
+                            
+                        form.name.data, form.description.data, form.content.data, form.price.data, form.category.data, form.subcategory.data = (
+                            item.name, item.about, item.content, item.amount, item.category_name, str(item.subcategory_id)
                         )
     
                         if item.file:
@@ -197,7 +314,7 @@ def upload():
 
             db_sess.commit()
 
-            if form.photo:
+            if form.photo.data:
                 form.photo.data.save(os.path.join(app.config['ITEMS_IMAGES_PATH'], f'{item.id}.png'))
 
             flash(f'Товар успешно {"выставлен" if not edit else "изменен"}', 'success')
@@ -224,15 +341,17 @@ def download(filename):
 @app.route('/deposit', methods=['POST'])
 @login_required
 def deposit():
+    # если вход через поддержку то пинаем работать
+    if current_user.id == 0:
+        return redirect('/chats')
     amount = request.form.get('amount')
     if amount:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.id == current_user.id).first()
         user.balance += int(amount)
         db_sess.commit()
-        return render_template(
-            'cabinet.html', balance=user.balance, backed='/'
-        )
+        flash(f'Успешное пополнение: {amount}₽', 'success')
+        return redirect('/cabinet')
     m = 'invalid data'
 
     return jsonify({'success': False, 'message': m}), 401
@@ -240,9 +359,12 @@ def deposit():
 
 @app.route('/search')
 def search():
+    # если вход через поддержку то пинаем работать
+    if current_user.is_authenticated and current_user.id == 0:
+        return redirect('/chats')
     target = request.args.get('query')
     db_sess = db_session.create_session()
-    res = db_sess.query(Item).filter(
+    items = db_sess.query(Item).filter(
         or_(
             Item.name.ilike(f'%{target.lower()}%'),
             Item.name.ilike(f'%{target.capitalize()}%'),
@@ -250,11 +372,24 @@ def search():
             Item.about.ilike(f'%{target.capitalize()}%')
     )
     ).all()
-
     db_sess.close()
+
+    # режим фильтра
+    mnPrice, mxPrice = request.args.get('minPrice'), request.args.get('maxPrice')
+    if mnPrice and mxPrice and mnPrice.isdigit() and mnPrice.isdigit() and int(mnPrice) <= int(mxPrice):
+        for i, j in enumerate(items):
+            if not (j.amount >= int(mnPrice) and j.amount <= int(mxPrice)):
+                items.pop(i)
+
+    dateType = request.args.get('dateType')
+    items = sorted(
+        items, key=lambda item: item.created_date,
+        reverse=False if dateType == 'old' else True
+    )
+
     return render_template(
-        'catalog.html', 
-        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id) for i in res], 
+        'catalog.html',
+        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id, i.created_date) for i in items],
         backed='/'
     )
 
@@ -278,6 +413,9 @@ def page_not_found(e):
 @app.route('/cabinet/my_items')
 @login_required
 def my_items():
+    # если вход через поддержку то пинаем работать
+    if current_user.id == 0:
+        return redirect('/chats')
     db_sess = db_session.create_session()
     items = db_sess.query(Item).filter(Item.owner == current_user.id).all()
     return render_template('my_items.html', items=items, backed='/cabinet')
@@ -285,4 +423,4 @@ def my_items():
 
 if __name__ == '__main__':
     db_session.global_init("db/database.sqlite")
-    app.run(port=8080, host='127.0.0.1', debug=True)
+    app.run(port=8080, host='0.0.0.0', debug=True)

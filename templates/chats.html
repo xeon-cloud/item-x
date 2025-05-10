@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .chat-container {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 15px;
+        margin-top: 20px;
+        color: #ffffff;
+        height: 90vh;
+    }
+
+    .user-list-container {
+        border-right: 1px solid #ccc;
+        padding-right: 15px;
+        overflow-y: auto;
+        max-height: 75vh;
+        scrollbar-width: thin;
+        scrollbar-color: #088bf04b #045d7343;
+    }
+
+    .user-list {
+        padding-bottom: 15px;
+    }
+
+    .message-bubble {
+        background-color: #f0f0f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        display: inline-block;
+        word-break: break-word;
+        max-width: 80%;
+        color: black;
+    }
+
+    .message-sent {
+        background-color: #dcf8c6;
+        align-self: flex-end;
+    }
+
+    .message-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .message-container.sent {
+        align-items: flex-end;
+    }
+
+    .avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        margin-right: 8px;
+        margin-bottom: 5px;
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 20px;
+    }
+
+    .user-item:last-child {
+        border-bottom: none;
+    }
+
+    .user-item:hover {
+        background-color: #c2c2c210;
+    }
+
+    .status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 5px;
+    }
+
+    .online-status {
+        background-color: green;
+    }
+
+    .offline-status {
+        background-color: red;
+    }
+    .message-time {
+        font-size: 0.75rem;
+        color: #777;
+        position: relative;
+        top: 10px;
+    }
+    .online {
+        color: #28a745;
+        font-size: 17px;
+    }
+    .offline {
+        color: #dc3545;
+        font-size: 17px;
+    }
+    .last-activity {
+        font-size: 17px;
+    }
+
+    .chat-messages {
+        overflow-y: auto;
+        height: 450px;
+        padding: 10px;
+        max-height: 60vh;
+        scrollbar-width: thin;
+        scrollbar-color: #088bf04b #045d7343;
+    }
+
+    .chat-header {
+        text-align: center;
+        border-bottom: 1px solid #cccccc79;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+
+    .message-input-area {
+        margin-top: auto;
+    }
+</style>
+<div class="container chat-container">
+    <div class="row h-100">
+        <div class="col-md-4">
+            <div class="row mb-3">
+                <h4 style="font-weight: bold;text-align: center;">Мои чаты</h4>
+            </div>
+
+            <div class="user-list-container">
+                <div class="user-list">
+                    {% for user in data %}
+                        <a href="/chat/{{ user.id }}" style="text-decoration: none;color: #ffffff;">
+                            <div class="user-item">
+                                {% if user.avatar == 1 %}
+                                    <img src="{{ url_for('static', filename='images/avatars/' + user.id|string + '.png') }}" class="avatar">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="avatar">
+                                {% endif %}
+                                {{ user.username }}
+                                {% if user.id != 0 %}
+                                    <span class="status {{ 'online' if user.format_activity()[1] == 1 else 'offline' }}-status"></span>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>  <!-- Container *ends* here -->
+        </div>
+
+        <div class="col-md-8 d-flex flex-column">
+            {% if active_user and active_chat %}
+                <div class="chat-header">
+                    <h4>{{ active_user.username }}</h4>
+                    {% if active_user.id != 0 %}
+                        <p>{{ active_user.format_activity()[0] | safe }}</p>
+                    {% endif %}
+                </div>
+                <div class="chat-messages mt-3">
+                    {% for message in active_chat %}
+                    <div class="message-container {{ 'sent' if current_user.id == message.get('from') else '' }}">
+                        <div class="message-bubble {{ 'message-sent' if current_user.id == message.get('from') else '' }}">
+                            {{ message.get('content') }}
+                            <span class="message-time">{{ message.get('time') }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="message-input-area mt-auto">
+                <div class="input-group mt-3">
+                    <input type="text" class="form-control" placeholder="Сообщение..." id="message-input">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="button" id="send-button">
+                            <i class="fa fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <span>Выберите чат</span>
+        {% endif %}
+    </div>
+</div>
+</div>
+
+{% if active_user and active_chat %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sendButton = document.getElementById('send-button');
+        const messageInput = document.getElementById('message-input');
+        const chatMessages = document.querySelector('.chat-messages');
+
+    sendButton.addEventListener('click', function() {
+        const messageContent = messageInput.value.trim();
+
+        if (messageContent !== '') {
+            const activeUserId = "{{ active_user.id }}";
+            const apiUrl = `/api/messages/${activeUserId}/send`;
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content: messageContent
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Message sent successfully:', data);
+                appendNewMessage(messageContent);
+                messageInput.value = '';
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+            });
+        }
+    });
+
+    function appendNewMessage(message) {
+        const messageContainer = document.createElement('div');
+        messageContainer.classList.add('message-container', 'sent');
+
+        const messageBubble = document.createElement('div');
+        messageBubble.classList.add('message-bubble', 'message-sent');
+        messageBubble.textContent = message;
+
+        const messageTime = document.createElement('span');
+        messageTime.classList.add('message-time');
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        messageTime.textContent = `${hours}:${minutes}`;
+
+        messageBubble.appendChild(messageTime);
+        messageContainer.appendChild(messageBubble);
+        chatMessages.appendChild(messageContainer);
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    }
+
+    });
+    </script>
+{% endif %}
+{% endblock %}
