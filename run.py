@@ -182,8 +182,7 @@ def loadItemCard(cat, sub_id, item_id):
                                 header=render[0],
                                 content=render[1].format(
                                     current_user.id, current_user.username,
-                                    cat, sub_id, item_id,
-                                    item.amount
+                                    cat, sub_id, item_id, item.name, item.amount
                                 )
                             )
 
@@ -202,6 +201,7 @@ def loadItemCard(cat, sub_id, item_id):
     except Exception as e:
         db_sess.rollback()
         print(f'Item Error: {e}')
+        return jsonify({'err': str(e)})
     finally:
         db_sess.close()
 
