@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>История покупок</h1>
+    {% if purchases %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Товар</th>
+                    <th>Описание</th>
+                    <th>Цена</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for purchase in purchases %}
+                <tr>
+                    <td>{{ purchase.purchase_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        <a href="{{ purchase.item_url }}">
+                            {{ purchase.item_name }}
+                        </a>
+                    </td>
+                    <td>{{ purchase.item_description }}</td>
+                    <td>{{ purchase.price }}</td>
+                    <td>
+                        <img src="" alt="{{ purchase.item_name }}" width="50">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>У вас пока нет покупок.</p>
+    {% endif %}
+</div>
+{% endblock %}
