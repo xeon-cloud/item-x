@@ -5,7 +5,7 @@ from . import db_session
 class RenderAlerts:
     purchase = (
         '<span class="ms-2"><i class="fa fa-credit-card" aria-hidden="true" style="margin-right: 5px"></i>Новая продажа</span>',
-        '<a href="/user/{}" style="color: #00FFFF">{}</a> купил ваш товар <a href="/category/{}/{}/{}" style="color: #FFD700">{}</a>. <span style="color: #00FF00">На баланс зачислено {}₽</span>'
+        '<a href="/user/{}" style="color: #00FFFF">{}</a> купил ваш товар <a href="/category/{}/{}/{}" style="color: #FFD700">{}</a>. <span style="color: #00FF00">{}₽ заморожены на сутки</span>'
     )
 
 class Alert(db_session.SqlAlchemyBase):

@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
     body {
         background-color: #343a40; /* Темный фон */
@@ -104,8 +109,34 @@
     
     <hr>
 
-    <a href="mailto:user@example.com" class="btn btn-primary">Написать</a>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#sendMesModal">
+        Написать
+    </button>
 </div>
 </div>
-
+<div class="modal fade" id="sendMesModal" tabindex="-1" role="dialog" aria-labelledby="sendMesModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content text-black">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendMesModalLabel"><i class="fa fa-arrow-up"></i> Отправка сообщения</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="/send_message/{{ user.id }}">
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input class="form-control" id="content" name="content" placeholder="Сообщение..." required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

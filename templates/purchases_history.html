@@ -4,7 +4,7 @@
 <div class="container">
     <h1>История покупок</h1>
     {% if purchases %}
-        <table class="table">
+        <table class="table text-white">
             <thead>
                 <tr>
                     <th>Дата</th>
@@ -17,7 +17,7 @@
             <tbody>
                 {% for purchase in purchases %}
                 <tr>
-                    <td>{{ purchase.purchase_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ purchase.format_date() }}</td>
                     <td>
                         <a href="{{ purchase.item_url }}">
                             {{ purchase.item_name }}
@@ -33,7 +33,7 @@
             </tbody>
         </table>
     {% else %}
-        <p>У вас пока нет покупок.</p>
+        <p style="color: #ffffff;text-align: center;">У вас пока нет покупок.</p>
     {% endif %}
 </div>
 {% endblock %}

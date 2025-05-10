@@ -103,32 +103,36 @@
             <i class="fa fa-user-tag" aria-hidden="true"></i>
             <span class="ms-2">Покупатель</span>
         </div>
-        <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
-            {% if buyer.avatar == 1 %}
-                <img src="{{ url_for('static', filename='images/avatars/' + buyer.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
-            {% else %}
-                <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
-            {% endif %}
-            <div>
-                <strong>{{ buyer.username }}</strong>
+        <a href="/user/{{ buyer.id }}" style="text-decoration: none;color: #ffffff;">
+            <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
+                {% if buyer.avatar == 1 %}
+                    <img src="{{ url_for('static', filename='images/avatars/' + buyer.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                {% endif %}
+                <div>
+                    <strong>{{ buyer.username }}</strong>
+                </div>
             </div>
-        </div> 
+        </a>
     {% elif owner.id != current_user.id %}
         <div class="separator"></div>
         <div class="section-title">
             <i class="fa fa-user-tag" aria-hidden="true"></i>
             <span class="ms-2">Продавец</span>
         </div>
-        <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
-            {% if owner.avatar == 1 %}
-                <img src="{{ url_for('static', filename='images/avatars/' + owner.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
-            {% else %}
-                <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
-            {% endif %}
-            <div>
-                <strong>{{ owner.username }}</strong>
+        <a href="/user/{{ owner.id }}" style="text-decoration: none;color: #ffffff;">
+            <div class="owner-container d-flex align-items-center p-2 border rounded shadow-sm" style="background-color: rgba(0, 123, 255, 0.05); max-width: fit-content;margin: auto;">
+                {% if owner.avatar == 1 %}
+                    <img src="{{ url_for('static', filename='images/avatars/' + owner.id|string + '.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/avatars/default.png') }}" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                {% endif %}
+                <div>
+                    <strong>{{ owner.username }}</strong>
+                </div>
             </div>
-        </div>
+        </a>
     {% endif %}
     <div class="button-container d-flex flex-column">
         <div class="separator"></div>

@@ -150,10 +150,12 @@
             top: 50%; /* Центрируем по вертикали */
             transform: translate(-50%, -50%); /* Сдвигаем на половину ширины и высоты */
             z-index: 1000;
-            width: 300px; /* Ширина выпадающего меню */
-            max-height: 280px; /* Максимальная высота для трех уведомлений */
+            width: 400px; /* Ширина выпадающего меню */
+            max-height: 350px; /* Максимальная высота для трех уведомлений */
             overflow-y: auto; /* Прокрутка по вертикали */
             display: none; /* Изначально скрыто */
+            scrollbar-width: thin;
+            scrollbar-color: #088bf04b #045d7343;
         }
 
         .notification-item {
@@ -174,7 +176,17 @@
             position: absolute; /* Абсолютное позиционирование */
             top: -5px; /* Положение сверху */
             right: -10px; /* Положение справа */
-}
+        }
+        .mesg-badge {
+            background-color: red; /* Красный фон */
+            color: white; /* Белый текст */
+            border-radius: 50%; /* Круглая форма */
+            padding: 2px 5px; /* Отступы */
+            font-size: 12px; /* Размер шрифта */
+            position: absolute; /* Абсолютное позиционирование */
+            top: -5px; /* Положение сверху */
+            right: -10px; /* Положение справа */
+        }
     </style>
 </head>
 <body>
@@ -310,6 +322,7 @@
         });
     })
 </script>
+{% set unreads = getUnr() %}
 {% if current_user.is_authenticated %}
     <a onclick="return false;" id="notificationButton" class="btn btn-primary rounded-circle alerts-button" title="Уведомления">
         {% if alerts[1] > 0 %}
@@ -317,7 +330,10 @@
         {% endif %}
         <i class="fas fa-bell"></i>
     </a>
-    <a href="/chats" class="btn btn-primary rounded-circle support-button" title="Поддержка">
+    <a href="/chats" class="btn btn-primary rounded-circle support-button" title="Мессенджер">
+        {% if unreads > 0 %}
+            <span class="mesg-badge">{{ unreads|string }}</span>
+        {% endif %}
         <i class="fas fa-comments"></i>
     </a>
 {% endif %}

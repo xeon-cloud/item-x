@@ -1,4 +1,5 @@
 import sqlalchemy
+import time
 import datetime
 from . import db_session
 
@@ -15,7 +16,7 @@ class Purchase(db_session.SqlAlchemyBase):
         sqlalchemy.Integer, sqlalchemy.ForeignKey('items.id'), nullable=False
     )
     purchase_date = sqlalchemy.Column(
-        sqlalchemy.DateTime, default=datetime.datetime.now
+        sqlalchemy.Integer, default=int(time.time())
     )
     price = sqlalchemy.Column(
         sqlalchemy.Float, nullable=False
@@ -32,3 +33,10 @@ class Purchase(db_session.SqlAlchemyBase):
     item_url = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
     )
+
+    def format_date(self):
+        months = ['Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня',
+                  'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря']
+
+        date = datetime.datetime.fromtimestamp(self.purchase_date)
+        return f'{date.day} {months[date.month - 1]} {date.year}'
