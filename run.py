@@ -14,7 +14,11 @@ import io
 
 from forms import UploadItem
 import oauth.model as mod
-from init_app import app
+from init_app import app, mail
+
+from data.purchases import Purchase
+from flask_mail import Message
+from threading import Thread
 
 import converter
 from data import db_session
@@ -152,6 +156,30 @@ def loadServicesCategory(cat, id):
     )
 
 
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
+
+
+def send_email(to, subject, template):
+    msg = Message(subject, recipients=[to], html=template)
+    Thread(target=send_async_email, args=(app, msg)).start()
+
+
+def send_purchase_confirmation_email(email, item_name, item_price):
+    template = render_template('email_template.html', item_name=item_name, item_price=item_price)
+    send_email(email, 'Подтверждение покупки', template)
+
+
+@app.route('/cabinet/purchase_history')
+@login_required
+def purchase_history():
+    db_sess = db_session.create_session()
+    purchases = db_sess.query(Purchase).filter(Purchase.user_id == current_user.id).order_by(Purchase.purchase_date.desc()).all()
+    db_sess.close()
+    return render_template('purchases_history.html', purchases=purchases)
+
+
 @app.route('/category/<cat>/<sub_id>/<item_id>')
 def loadItemCard(cat, sub_id, item_id):
     # если вход через поддержку то пинаем работать
@@ -187,6 +215,19 @@ def loadItemCard(cat, sub_id, item_id):
                                 )
                             )
 
+                            purchase = Purchase(
+                                user_id=current_user.id,
+                                item_id=item.id,
+                                price=item.amount,
+                                item_name=item.name,
+                                item_description=item.about,
+                                item_image=f'/static/images/items/{item.id}.png',
+                                item_url=f'/category/{cat}/{sub_id}/{item.id}'
+                            )
+
+                            send_purchase_confirmation_email(current_user.email, item.name, item.amount)
+
+                            db_sess.add(purchase)
                             db_sess.add(alert)
                             db_sess.commit()
                             flash('Товар куплен', 'success')
