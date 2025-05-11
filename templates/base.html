@@ -322,8 +322,8 @@
         });
     })
 </script>
-{% set unreads = getUnr() %}
 {% if current_user.is_authenticated %}
+    {% set unreads = getUnr() %}
     <a onclick="return false;" id="notificationButton" class="btn btn-primary rounded-circle alerts-button" title="Уведомления">
         {% if alerts[1] > 0 %}
             <span id="notificationCount" class="notification-badge">{{ alerts[1]|string }}</span>

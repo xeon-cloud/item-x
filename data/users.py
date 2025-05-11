@@ -21,6 +21,9 @@ class User(db_session.SqlAlchemyBase, UserMixin):
     balance = sqlalchemy.Column(
         sqlalchemy.Integer, default=0
     )
+    hold = sqlalchemy.Column(
+        sqlalchemy.Integer, default=0
+    )
     hashed_password = sqlalchemy.Column(
         sqlalchemy.String, nullable=True
     )
@@ -64,7 +67,17 @@ class User(db_session.SqlAlchemyBase, UserMixin):
         if diff < 60:
             return '<span class="online">В сети</span>', 1
         elif diff < 3600:
-            return f'<span class="last-activity offline">Был(а) {diff // 60} минут назад</span>', 0
+            minutes = diff // 60
+            ends = {
+                '1': 'y',
+                '2, 3, 4': 'ы',
+                '5, 6, 7, 8, 9, 0': ''
+            }
+            for i, j in ends.items():
+                if str(minutes)[-1] in i.split(', '):
+                    end =  j
+                    break
+            return f'<span class="last-activity offline">Был(а) {minutes} минут{end} назад</span>', 0
         elif diff < 86400:
             return f'<span class="last-activity offline">Был(а) {diff // 3600} часов назад</span>', 0
         else:

@@ -17,8 +17,6 @@ import oauth.model as mod
 from init_app import app, mail
 
 from data.purchases import Purchase
-from flask_mail import Message
-from threading import Thread
 
 import converter
 from data import db_session
@@ -26,6 +24,8 @@ from data.users import User
 from data.subcategories import SubCat
 from data.items import Item
 from data.alerts import Alert, RenderAlerts
+from data.holds import Hold, targetHolds
+
 import api.chats as chats
 
 provider.DefaultJSONProvider.sort_keys = False
@@ -67,6 +67,7 @@ def authorize():
                     login_user(user)
                     return
                 user.last_activity = int(time.time())
+                targetHolds(current_user.id)
                 db_sess.commit()
         except Exception as e:
             db_sess.rollback()
@@ -163,20 +164,6 @@ def loadServicesCategory(cat, id):
     )
 
 
-def send_async_email(app, msg):
-    with app.app_context():
-        mail.send(msg)
-
-
-def send_email(to, subject, template):
-    msg = Message(subject, recipients=[to], html=template)
-    Thread(target=send_async_email, args=(app, msg)).start()
-
-
-def send_purchase_confirmation_email(email, item_name, item_price):
-    template = render_template('email.html', item_name=item_name, item_price=item_price)
-    send_email(email, 'Подтверждение покупки', template)
-
 
 @app.route('/cabinet/purchase_history')
 @login_required
@@ -209,21 +196,12 @@ def loadItemCard(cat, sub_id, item_id):
                         if current_user.balance >= item.amount:
                             buyer = db_sess.query(User).filter(User.id == current_user.id).first()
                             buyer.balance = buyer.balance - item.amount
-                            owner.balance += item.amount
+                            owner.hold += item.amount
                             item.buyer, buyer = buyer.id, current_user
 
                             render = render_alerts.purchase
 
-                            alert = Alert(
-                                owner=item.owner,
-                                header=render[0],
-                                content=render[1].format(
-                                    current_user.id, current_user.username,
-                                    cat, sub_id, item_id, item.name, item.amount
-                                )
-                            )
-
-                            purchase = Purchase(
+                            db_sess.add(Purchase(
                                 user_id=current_user.id,
                                 item_id=item.id,
                                 price=item.amount,
@@ -231,12 +209,20 @@ def loadItemCard(cat, sub_id, item_id):
                                 item_description=item.about,
                                 item_image=f'/static/images/items/{item.id}.png',
                                 item_url=f'/category/{cat}/{sub_id}/{item.id}'
-                            )
-
-                            send_purchase_confirmation_email(current_user.email, item.name, item.amount)
-
-                            db_sess.add(purchase)
-                            db_sess.add(alert)
+                            ))
+                            db_sess.add(Alert(
+                                owner=item.owner,
+                                header=render[0],
+                                content=render[1].format(
+                                    current_user.id, current_user.username,
+                                    cat, sub_id, item_id, item.name, item.amount
+                                )
+                            ))
+                            db_sess.add(Hold(
+                                user_id=owner.id,
+                                amount=item.amount,
+                                end_date=int(time.time() + 86400)
+                            ))
                             db_sess.commit()
                             flash('Товар куплен', 'success')
                         else:
@@ -270,6 +256,7 @@ def loadCabinet():
         return render_template(
             'cabinet.html',
             balance_rub=user.balance, balance_usd=f'{converter.convert(user.balance):.2f}',
+            hold_rub=user.hold, hold_usd=f'{converter.convert(user.hold):.2f}',
             count_sells=count_sells, sum_sells=f'{sum_sells}₽ (${converter.convert(sum_sells):.2f})',
             date_register=user.format_date(),
             backed='/'
@@ -280,7 +267,7 @@ def loadCabinet():
 def loadUser(id):
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.id == id).first()
-    if not user:
+    if not user or id == 0:
         abort(404)
 
     sells = db_sess.query(Item).filter(Item.owner == user.id and Item.buyer).all()
