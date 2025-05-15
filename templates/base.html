@@ -238,7 +238,15 @@
                                 <span class="ms-2">Загрузка товара</span>
                             </a>
                         </li>
-                        {% endif %}
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.id == 0 %}
+                    <li class="nav-item me-2">
+                        <a class="nav-link btn btn-danger" href="/admin_panel">
+                            <i class="fas fa-tools"></i>
+                            <span class="ms-2">Admin Panel</span>
+                        </a>
+                    </li>
+                {% endif %}
                     <li class="nav-item me-2">
                         <a class="nav-link btn btn-custom" href="/cabinet">
                             {% if current_user.avatar == 1 %}

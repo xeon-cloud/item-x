@@ -5,6 +5,7 @@ import api.items as items
 import api.alerts as alerts
 import api.subcats as subcats
 import api.chats as chats
+import api.admin as admin
 import auth
 from flask_mail import Mail
 
@@ -16,6 +17,7 @@ app.register_blueprint(subcats.blueprint)
 app.register_blueprint(alerts.blueprint)
 app.register_blueprint(auth.blueprint)
 app.register_blueprint(chats.blueprint)
+app.register_blueprint(admin.blueprint)
 
 SECRET_KEY = os.urandom(32)
 app.config['SECRET_KEY'] = SECRET_KEY

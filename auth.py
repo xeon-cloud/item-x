@@ -5,6 +5,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import os
+import json
 
 import forms
 
@@ -21,6 +22,16 @@ from api.chats import sendMessage
 
 blueprint = Blueprint('auth', __name__, template_folder='templates')
 
+
+BANNED_USERS_FILE = 'banned_users.json'
+
+
+def get_banned_users():
+    try:
+        with open(BANNED_USERS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return []
 
 @blueprint.route('/auth/register', methods=['GET', 'POST'])
 def sign_up():
@@ -95,6 +106,10 @@ def sign_in():
                     User.email == form.username.data)
             ).first()
             if user and user.check_password(form.password.data):
+                if str(user.id) in get_banned_users():
+                    flash('Ваш аккаунт заблокирован', 'error')
+                    return redirect('/auth/login')
+
                 response = make_response(
                     redirect('/')
                 )
