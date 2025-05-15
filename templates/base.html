@@ -187,6 +187,21 @@
             top: -5px; /* Положение сверху */
             right: -10px; /* Положение справа */
         }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            animation: twinkle 3s linear infinite;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.8; }
+        }
+
     </style>
 </head>
 <body>
@@ -337,6 +352,24 @@
         <i class="fas fa-comments"></i>
     </a>
 {% endif %}
+<script>
+    // Функция для создания случайных чисел
+    function getRandom(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    // Создание звезд
+    for (let i = 0; i < 100; i++) {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        star.style.left = getRandom(0, 100) + 'vw';
+        star.style.top = getRandom(0, 100) + 'vh';
+        star.style.animationDelay = getRandom(0, 3) + 's'; // Разные задержки для мерцания
+        document.body.appendChild(star);
+    }
+
+
+</script>
 {% block content %}{% endblock %}
 </body>
 </html>

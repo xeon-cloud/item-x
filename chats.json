@@ -1,1 +1,17 @@
-[]
+[
+    {
+        "users": [
+            2,
+            1
+        ],
+        "messages": [
+            {
+                "from": 2,
+                "to": 1,
+                "content": "ку",
+                "unread": true,
+                "time": "13 May 22:35"
+            }
+        ]
+    }
+]

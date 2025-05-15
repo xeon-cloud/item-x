@@ -41,6 +41,12 @@ def load_user(user_id):
     db_sess.close()
     return user
 
+@app.context_processor
+def utility_processor():
+    def getToken():
+        return mod.createAuthToken({'id': current_user.id})
+    return dict(getToken=getToken)
+
 
 render_alerts = RenderAlerts()
 

@@ -74,6 +74,27 @@
         background-color: rgba(255, 255, 255, 0.2); /* Прозрачная линия */
         margin: 10px 0; /* Отступы сверху и снизу */
     }
+    .token-container {
+            position: relative;
+        }
+
+    .token-display {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 200px; 
+        display: inline-block;
+    }
+
+    .copy-button {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+    }
 </style>
 
 <div class="container">
@@ -100,7 +121,7 @@
                         {% if total == 0 %}
                             {% set percentage = "0" %}
                         {% else %}
-                            {% set percentage = (current_user.good_reviews // total) * 100 %}
+                            {% set percentage = (((current_user.good_reviews / total) * 100)  | round(0)) | int %}
                         {% endif %}
                         <p><i class="fa fa-money-bill-wave"></i> <strong>Баланс:</strong> <span id="balance">{{ balance_rub }}₽ (${{ balance_usd }})</span></p>
                         <div class="separator"></div>
@@ -138,10 +159,10 @@
                         </div>
 
                         <div class="button-grid">
-                            <a href="" class="btn btn-dark">
+                            <button data-bs-toggle="modal" data-bs-target="#tokenModal" class="btn btn-dark">
                                 <i class="fa fa-key"></i>
                                 API ключ
-                            </a>
+                            </button>
                         </div>
                     </div>
                     </div>
@@ -185,4 +206,47 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="tokenModal" tabindex="-1" aria-labelledby="tokenModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tokenModalLabel">Ваш токен для доступа к API</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="token-container">
+                        <span class="token-display" id="tokenDisplay">
+                            {{ getToken() }}
+                        </span>
+                        <button class="copy-button" onclick="copyToken(this)">
+                            <i class="fa fa-clipboard"></i>
+                        </button>
+                    </div>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+    function copyToken(button) {
+        const tokenText = document.getElementById("tokenDisplay").textContent;
+        navigator.clipboard.writeText(tokenText)
+            .then(() => {
+                button.innerHTML = '<i class="fa fa-check" style="color: green;"></i>';
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fa fa-clipboard"></i>';
+                }, 3000);
+            })
+            .catch(err => {
+                console.error('Ошибка при копировании: ', err);
+                alert("Ошибка при копировании токена. Пожалуйста, скопируйте вручную.");
+            });
+    }
+</script>
+
 {% endblock %}

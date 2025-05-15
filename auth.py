@@ -1,5 +1,6 @@
 from flask import Blueprint, request, session, flash, make_response, render_template, redirect, abort
 from flask_login import current_user
+from sqlalchemy import or_
 import requests
 from PIL import Image
 from io import BytesIO
@@ -89,7 +90,10 @@ def sign_in():
         captchaResponse = data.get('h-captcha-response')
         if captchaResponse and cap.validateCaptcha(captchaResponse):
             db_sess = db_session.create_session()
-            user = db_sess.query(User).filter(User.username == form.username.data).first()
+            user = db_sess.query(User).filter(
+                or_(User.username == form.username.data,
+                    User.email == form.username.data)
+            ).first()
             if user and user.check_password(form.password.data):
                 response = make_response(
                     redirect('/')
