@@ -14,7 +14,7 @@ import io
 
 from forms import UploadItem
 import oauth.model as mod
-from init_app import app, mail
+from init_app import app
 
 from data.purchases import Purchase
 
