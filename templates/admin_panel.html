@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('userBalance').textContent = `${user.balance}₽`;
             document.getElementById('userHold').textContent = `${user.hold}₽`;
             document.getElementById('userBanned').textContent = user.banned ? 'Забанен' : 'Не забанен';
-            document.getElementById('userAvatar').src = user.avatar_url;
+            document.getElementById('userAvatar').src = user.avatar;
         } catch (error) {
             console.error('Ошибка поиска:', error);
         }

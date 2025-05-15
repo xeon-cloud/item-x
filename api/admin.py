@@ -9,7 +9,7 @@ import os
 
 blueprint = Blueprint('admin', __name__)
 
-BANNED_USERS_FILE = os.path.join(os.path.dirname(__file__), 'banned_users.json')
+BANNED_USERS_FILE = 'banned_users.json'
 
 
 def get_banned_users():
@@ -22,7 +22,7 @@ def get_banned_users():
 
 def save_banned_users(data):
     with open(BANNED_USERS_FILE, 'w') as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=4)
 
 
 @blueprint.route('/api/admin/search', methods=['GET'])
@@ -49,7 +49,8 @@ def admin_search():
             'balance': user.balance,
             'hold': user.hold,
             'banned': str(user.id) in get_banned_users(),
-            'reg_date': user.format_date()
+            'reg_date': user.format_date(),
+            'avatar': f'/static/images/avatars/{user.id if user.avatar == 1 else "default"}.png'
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -105,8 +106,8 @@ def ban_user():
 
     data = request.get_json()
     banned = get_banned_users()
-    if str(data['user_id']) not in banned:
-        banned.append(str(data['user_id']))
+    if data['user_id'] not in banned:
+        banned.append(data['user_id'])
         save_banned_users(banned)
     return jsonify({'success': True})
 
@@ -119,7 +120,7 @@ def unban_user():
 
     data = request.get_json()
     banned = get_banned_users()
-    if str(data['user_id']) in banned:
-        banned.remove(str(data['user_id']))
+    if data['user_id'] in banned:
+        banned.remove(data['user_id'])
         save_banned_users(banned)
     return jsonify({'success': True})

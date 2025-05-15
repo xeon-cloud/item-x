@@ -27,6 +27,7 @@ from data.alerts import Alert, RenderAlerts
 from data.holds import Hold, targetHolds
 
 import api.chats as chats
+from api.admin import get_banned_users
 
 provider.DefaultJSONProvider.sort_keys = False
 provider.DefaultJSONProvider.ensure_ascii = False
@@ -72,9 +73,8 @@ def authorize():
         try:
             db_sess = db_session.create_session()
             user_id = mod.decodeAuthToken(auth_token)['id']
-
             # Проверяем бан
-            if str(user_id) in get_banned_users():
+            if user_id in get_banned_users():
                 response = make_response(redirect('/banned'))
                 response.delete_cookie('auth_token')
                 logout_user()
@@ -268,134 +268,7 @@ def admin_panel():
     if current_user.id != 0:
         abort(403)
     return render_template('admin_panel.html')
-#
-#
-# @app.route('/api/admin/search')
-# @login_required
-# def admin_search():
-#     if current_user.id != 0:
-#         abort(403)
-#
-#     query = request.args.get('query')
-#     db_sess = db_session.create_session()
-#
-#     try:
-#         user = db_sess.query(User).filter(
-#             (User.id == query) | (User.username.ilike(f'%{query}%'))
-#         ).first()
-#
-#         if not user:
-#             return jsonify({'error': 'Пользователь не найден'}), 404
-#
-#         return jsonify({
-#             'id': user.id,
-#             'username': user.username,
-#             'reg_date': user.format_date(),
-#             'balance': user.balance,
-#             'hold': user.hold,
-#             'banned': str(user.id) in get_banned_users(),
-#             'avatar_url': url_for('static',
-#                                   filename=f'images/avatars/{user.id}.png' if user.avatar else 'images/avatars/default.png')
-#         })
-#     finally:
-#         db_sess.close()
-#
-#
-# BANNED_USERS_FILE = 'banned_users.json'
-#
-#
-def get_banned_users():
-    try:
-        with open('banned_users.json', 'r') as f:
-            return json.load(f)
-    except:
-        return []
-#
-#
-# def save_banned_users(data):
-#     with open(BANNED_USERS_FILE, 'w') as f:
-#         json.dump(data, f)
-#
-#
-# # Бан пользователя
-# @app.route('/api/admin/ban', methods=['POST'])
-# @login_required
-# def admin_ban():
-#     if current_user.id != 0:
-#         abort(403)
-#
-#     user_id = request.json.get('user_id')
-#     banned = get_banned_users()
-#     if str(user_id) not in banned:
-#         banned.append(str(user_id))
-#         save_banned_users(banned)
-#     return jsonify({'success': True})
-#
-#
-# @app.route('/banned')
-# def banned_page():
-#     logout_user()
-#     response = make_response(render_template('banned.html'))
-#     response.delete_cookie('auth_token')
-#     return response
-#
-# @app.route('/api/admin/unban', methods=['POST'])
-# @login_required
-# def admin_unban():
-#     if current_user.id != 0:
-#         abort(403)
-#
-#     user_id = request.json.get('user_id')
-#     banned = get_banned_users()
-#     if str(user_id) in banned:
-#         banned.remove(str(user_id))
-#         save_banned_users(banned)
-#     return jsonify({'success': True})
-#
-#
-# # Установка баланса
-# @app.route('/api/admin/set_balance', methods=['POST'])
-# @login_required
-# def admin_set_balance():
-#     if current_user.id != 0:
-#         abort(403)
-#
-#     data = request.get_json()
-#     db_sess = db_session.create_session()
-#     user = db_sess.query(User).get(data['user_id'])
-#     user.balance = int(data['balance'])
-#     db_sess.commit()
-#     return jsonify({'success': True})
-#
-#
-# # Удаление холдов
-# @app.route('/api/admin/clear_holds', methods=['POST'])
-# @login_required
-# def admin_clear_holds():
-#     if current_user.id != 0:
-#         abort(403)
-#
-#     data = request.get_json()
-#     db_sess = db_session.create_session()
-#     holds = db_sess.query(Hold).filter_by(user_id=data['user_id']).delete()
-#     user = db_sess.query(User).get(data['user_id'])
-#     user.hold = 0
-#     db_sess.commit()
-#     return jsonify({'success': True})
-#
-#
-# # Отправка сообщения
-# @app.route('/api/admin/send_message', methods=['POST'])
-# @login_required
-# def admin_send_message():
-#     if current_user.id != 0:
-#         abort(403)
-#
-#     data = request.get_json()
-#     from api.chats import sendMessage
-#     sendMessage(data['user_id'], data['content'], as_support=True)
-#     return jsonify({'success': True})
-#
+
 
 @app.route('/cabinet')
 def loadCabinet():
