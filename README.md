@@ -68,6 +68,7 @@
   'data': {
       'id': 1,
       'url': '/category/services/1/1'
+  }
 }
 ```
 
