@@ -34,6 +34,7 @@ provider.DefaultJSONProvider.ensure_ascii = False
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+
 @login_manager.user_loader
 def load_user(user_id):
     db_sess = db_session.create_session()
@@ -41,18 +42,22 @@ def load_user(user_id):
     db_sess.close()
     return user
 
+
 @app.context_processor
 def utility_processor():
     def getToken():
         return mod.createAuthToken({'id': current_user.id})
+
     return dict(getToken=getToken)
 
 
 render_alerts = RenderAlerts()
 
+
 def cats() -> dict:
     with open('categories.json', 'r', encoding='utf-8') as f:
         return json.load(f)
+
 
 
 @app.before_request
@@ -61,12 +66,20 @@ def authorize():
         logout_user()
         del session['logout']
         return
-    
+
     auth_token = request.cookies.get('auth_token')
     if auth_token:
         try:
             db_sess = db_session.create_session()
             user_id = mod.decodeAuthToken(auth_token)['id']
+
+            # Проверяем бан
+            if str(user_id) in get_banned_users():
+                response = make_response(redirect('/banned'))
+                response.delete_cookie('auth_token')
+                logout_user()
+                return response
+
             user = db_sess.query(User).filter(User.id == user_id).first()
             if user:
                 if current_user.is_anonymous:
@@ -103,6 +116,7 @@ def chat():
         active_user=None,
         backed='/'
     )
+
 
 @app.route('/chat/<int:id>')
 def userChat(id):
@@ -143,8 +157,8 @@ def loadServicesCategory(cat, id):
         return redirect('/chats')
     db_sess = db_session.create_session()
     items = db_sess.query(Item).filter(
-        (Item.category_name == cat) & 
-        (Item.subcategory_id == int(id)) & 
+        (Item.category_name == cat) &
+        (Item.subcategory_id == int(id)) &
         (Item.buyer == None)
     ).all()
 
@@ -170,12 +184,12 @@ def loadServicesCategory(cat, id):
     )
 
 
-
 @app.route('/cabinet/purchase_history')
 @login_required
 def purchase_history():
     db_sess = db_session.create_session()
-    purchases = db_sess.query(Purchase).filter(Purchase.user_id == current_user.id).order_by(Purchase.purchase_date.desc()).all()
+    purchases = db_sess.query(Purchase).filter(Purchase.user_id == current_user.id).order_by(
+        Purchase.purchase_date.desc()).all()
     db_sess.close()
     return render_template('purchases_history.html', purchases=purchases, backed='/cabinet')
 
@@ -197,7 +211,7 @@ def loadItemCard(cat, sub_id, item_id):
                     # пинаем на авторизацию если лезет покупать при гостевом входе
                     if current_user.is_anonymous:
                         return redirect('/auth/login')
-                    
+
                     if owner.id != current_user.id:
                         if current_user.balance >= item.amount:
                             buyer = db_sess.query(User).filter(User.id == current_user.id).first()
@@ -238,7 +252,7 @@ def loadItemCard(cat, sub_id, item_id):
                     subcat=subcat.name, owner=owner, buyer=buyer,
                     backed=f'/category/{cat}/{sub_id}'
                 )
-        
+
         abort(404)
     except Exception as e:
         db_sess.rollback()
@@ -247,6 +261,141 @@ def loadItemCard(cat, sub_id, item_id):
     finally:
         db_sess.close()
 
+
+@app.route('/admin_panel')
+@login_required
+def admin_panel():
+    if current_user.id != 0:
+        abort(403)
+    return render_template('admin_panel.html')
+#
+#
+# @app.route('/api/admin/search')
+# @login_required
+# def admin_search():
+#     if current_user.id != 0:
+#         abort(403)
+#
+#     query = request.args.get('query')
+#     db_sess = db_session.create_session()
+#
+#     try:
+#         user = db_sess.query(User).filter(
+#             (User.id == query) | (User.username.ilike(f'%{query}%'))
+#         ).first()
+#
+#         if not user:
+#             return jsonify({'error': 'Пользователь не найден'}), 404
+#
+#         return jsonify({
+#             'id': user.id,
+#             'username': user.username,
+#             'reg_date': user.format_date(),
+#             'balance': user.balance,
+#             'hold': user.hold,
+#             'banned': str(user.id) in get_banned_users(),
+#             'avatar_url': url_for('static',
+#                                   filename=f'images/avatars/{user.id}.png' if user.avatar else 'images/avatars/default.png')
+#         })
+#     finally:
+#         db_sess.close()
+#
+#
+# BANNED_USERS_FILE = 'banned_users.json'
+#
+#
+def get_banned_users():
+    try:
+        with open('banned_users.json', 'r') as f:
+            return json.load(f)
+    except:
+        return []
+#
+#
+# def save_banned_users(data):
+#     with open(BANNED_USERS_FILE, 'w') as f:
+#         json.dump(data, f)
+#
+#
+# # Бан пользователя
+# @app.route('/api/admin/ban', methods=['POST'])
+# @login_required
+# def admin_ban():
+#     if current_user.id != 0:
+#         abort(403)
+#
+#     user_id = request.json.get('user_id')
+#     banned = get_banned_users()
+#     if str(user_id) not in banned:
+#         banned.append(str(user_id))
+#         save_banned_users(banned)
+#     return jsonify({'success': True})
+#
+#
+# @app.route('/banned')
+# def banned_page():
+#     logout_user()
+#     response = make_response(render_template('banned.html'))
+#     response.delete_cookie('auth_token')
+#     return response
+#
+# @app.route('/api/admin/unban', methods=['POST'])
+# @login_required
+# def admin_unban():
+#     if current_user.id != 0:
+#         abort(403)
+#
+#     user_id = request.json.get('user_id')
+#     banned = get_banned_users()
+#     if str(user_id) in banned:
+#         banned.remove(str(user_id))
+#         save_banned_users(banned)
+#     return jsonify({'success': True})
+#
+#
+# # Установка баланса
+# @app.route('/api/admin/set_balance', methods=['POST'])
+# @login_required
+# def admin_set_balance():
+#     if current_user.id != 0:
+#         abort(403)
+#
+#     data = request.get_json()
+#     db_sess = db_session.create_session()
+#     user = db_sess.query(User).get(data['user_id'])
+#     user.balance = int(data['balance'])
+#     db_sess.commit()
+#     return jsonify({'success': True})
+#
+#
+# # Удаление холдов
+# @app.route('/api/admin/clear_holds', methods=['POST'])
+# @login_required
+# def admin_clear_holds():
+#     if current_user.id != 0:
+#         abort(403)
+#
+#     data = request.get_json()
+#     db_sess = db_session.create_session()
+#     holds = db_sess.query(Hold).filter_by(user_id=data['user_id']).delete()
+#     user = db_sess.query(User).get(data['user_id'])
+#     user.hold = 0
+#     db_sess.commit()
+#     return jsonify({'success': True})
+#
+#
+# # Отправка сообщения
+# @app.route('/api/admin/send_message', methods=['POST'])
+# @login_required
+# def admin_send_message():
+#     if current_user.id != 0:
+#         abort(403)
+#
+#     data = request.get_json()
+#     from api.chats import sendMessage
+#     sendMessage(data['user_id'], data['content'], as_support=True)
+#     return jsonify({'success': True})
+#
 
 @app.route('/cabinet')
 def loadCabinet():
@@ -268,6 +417,7 @@ def loadCabinet():
             backed='/'
         )
     return redirect('/')
+
 
 @app.route('/user/<int:id>')
 def loadUser(id):
@@ -315,16 +465,17 @@ def upload():
                             validators.remove(validator)
 
                     form = F()
-                    
+
                     item = req
                     if request.method != 'POST':
                         for subcat in db_sess.query(SubCat).filter(SubCat.category == item.category_name).all():
                             form.subcategory.choices.append((subcat.id, subcat.name))
-                            
+
                         form.name.data, form.description.data, form.content.data, form.price.data, form.category.data, form.subcategory.data = (
-                            item.name, item.about, item.content, item.amount, item.category_name, str(item.subcategory_id)
+                            item.name, item.about, item.content, item.amount, item.category_name,
+                            str(item.subcategory_id)
                         )
-    
+
                         if item.file:
                             file_path = f'{app.config["ITEMS_FILES_PATH"]}/{item.file}'
                             with open(file_path, 'rb') as f:
@@ -365,7 +516,7 @@ def upload():
 
         for target, name in cats().items():
             form.category.choices.append((target, name))
-        
+
         return render_template(
             'upload.html', form=form,
             action=f'/upload?action=edit&id={item.id}' if edit else '/upload', backed='/'
@@ -413,7 +564,7 @@ def search():
             Item.name.ilike(f'%{target.capitalize()}%'),
             Item.about.ilike(f'%{target.lower()}%'),
             Item.about.ilike(f'%{target.capitalize()}%')
-    )
+        )
     ).all()
     db_sess.close()
 
@@ -432,7 +583,8 @@ def search():
 
     return render_template(
         'catalog.html',
-        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id, i.created_date) for i in items],
+        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id, i.created_date) for i in
+               items],
         backed='/'
     )
 

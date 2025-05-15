@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <!-- Поисковая строка -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <form id="searchForm" class="d-flex">
+                <input type="text"
+                       class="form-control me-2"
+                       id="searchInput"
+                       placeholder="Введите ID или имя"
+                       required>
+                <button type="submit" class="btn btn-primary">Найти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="row">
+        <!-- Карточка пользователя -->
+        <div class="col-md-6 mb-4">
+            <div class="card admin-card">
+                <div class="card-body text-center">
+                    <img id="userAvatar"
+                         src="/static/images/avatars/default.png"
+                         class="rounded-circle mb-3"
+                         style="width: 120px; height: 120px;">
+                    <h4 id="userName" class="text-light mb-3">-</h4>
+
+                    <div class="info-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="regDate">-</span>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-wallet"></i>
+                        <span id="userBalance">0₽</span>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-lock"></i>
+                        <span id="userHold">0₽</span>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-ban"></i>
+                        <span id="userBanned">Не забанен</span>
+                    </div>
+
+                    <button class="btn btn-danger mt-3" id="banBtn">
+                        <i class="fas fa-gavel"></i> Забанить
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель управления -->
+        <div class="col-md-6">
+            <div class="card admin-card">
+                <div class="card-body">
+                    <!-- Установка баланса -->
+                    <div class="mb-4">
+                        <button class="btn btn-primary w-100"
+                                onclick="togglePanel('balancePanel')">
+                            <i class="fas fa-coins"></i> Установить баланс
+                        </button>
+                        <div id="balancePanel" class="input-panel">
+                            <input type="number"
+                                   class="form-control mt-2"
+                                   id="balanceInput"
+                                   placeholder="Новая сумма">
+                            <button class="btn btn-success mt-2 w-100"
+                                    id="confirmBalance">
+                                Применить
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Удаление холда -->
+                    <div class="mb-4">
+                        <button class="btn btn-warning w-100"
+                                id="clearHoldBtn">
+                            <i class="fas fa-unlock"></i> Удалить холд
+                        </button>
+                    </div>
+
+                    <!-- Отправка сообщения -->
+                    <div class="mb-4">
+                        <button class="btn btn-success w-100"
+                                onclick="togglePanel('messagePanel')">
+                            <i class="fas fa-comments"></i> Написать в чат
+                        </button>
+                        <div id="messagePanel" class="input-panel">
+                            <textarea class="form-control mt-2"
+                                      rows="3"
+                                      id="messageContent"
+                                      placeholder="Текст сообщения"></textarea>
+                            <button class="btn btn-primary mt-2 w-100"
+                                    id="sendMessageBtn">
+                                Отправить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-card {
+    background: rgba(40, 40, 40, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.input-panel {
+    display: none;
+    background: rgba(60, 60, 60, 0.9);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    animation: slideDown 0.3s ease;
+}
+
+.input-panel.active {
+    display: block;
+}
+
+.info-item {
+    margin: 15px 0;
+    font-size: 16px;
+    color: #ffffff;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let selectedUserId = null;
+
+    // Поиск пользователя
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = document.getElementById('searchInput').value.trim();
+
+        try {
+            const response = await fetch(`/api/admin/search?query=${encodeURIComponent(query)}`, {
+                headers: {
+                    'Authorization': `Bearer ${getCookie('auth_token')}`
+                }
+            });
+            const user = await response.json();
+
+            if (user.error) {
+                alert(user.error);
+                return;
+            }
+
+            selectedUserId = user.id;
+            updateBanButton(user.banned);
+
+            // Обновление данных
+            selectedUserId = user.id;
+            document.getElementById('userName').textContent = user.username;
+            document.getElementById('regDate').textContent = user.reg_date;
+            document.getElementById('userBalance').textContent = `${user.balance}₽`;
+            document.getElementById('userHold').textContent = `${user.hold}₽`;
+            document.getElementById('userBanned').textContent = user.banned ? 'Забанен' : 'Не забанен';
+            document.getElementById('userAvatar').src = user.avatar_url;
+        } catch (error) {
+            console.error('Ошибка поиска:', error);
+        }
+    });
+
+    // Функция обновления кнопки бана
+    const updateBanButton = (isBanned) => {
+        const banBtn = document.getElementById('banBtn');
+        banBtn.textContent = isBanned ? 'Разбанить' : 'Забанить';
+        banBtn.onclick = isBanned ? handleUnban : handleBan;
+        banBtn.classList.toggle('btn-danger', !isBanned);
+        banBtn.classList.toggle('btn-success', isBanned);
+    };
+
+    // Бан пользователя
+    // Бан
+    const handleBan = async () => {
+        const response = await fetch('/api/admin/ban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: selectedUserId })
+        });
+
+        if (response.ok) {
+            updateBanButton(true); // Принудительно обновляем кнопку
+            document.getElementById('userBanned').textContent = 'Забанен';
+        }
+    };
+
+    // Разбан
+    const handleUnban = async () => {
+        const response = await fetch('/api/admin/unban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: selectedUserId })
+        });
+
+        if (response.ok) {
+            updateBanButton(false); // Принудительно обновляем кнопку
+            document.getElementById('userBanned').textContent = 'Не забанен';
+        }
+    };
+
+    // Установка баланса
+    document.getElementById('confirmBalance').addEventListener('click', async () => {
+        if (!selectedUserId) {
+            alert('Сначала найдите пользователя!');
+            return;
+        }
+
+        const newBalance = document.getElementById('balanceInput').value;
+        const response = await fetch('/api/admin/set_balance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('auth_token')}`
+            },
+            body: JSON.stringify({
+                user_id: selectedUserId,
+                balance: newBalance
+            })
+        });
+
+        if (response.ok) {
+            alert('Баланс обновлён!');
+            location.reload();
+        }
+    });
+
+    // Удаление холда
+    document.getElementById('clearHoldBtn').addEventListener('click', async () => {
+        if (!selectedUserId) {
+            alert('Сначала найдите пользователя!');
+            return;
+        }
+
+        const response = await fetch('/api/admin/clear_holds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('auth_token')}`
+            },
+            body: JSON.stringify({ user_id: selectedUserId })
+        });
+
+        if (response.ok) {
+            alert('Холды удалены!');
+            location.reload();
+        }
+    });
+
+    // Отправка сообщения
+    document.getElementById('sendMessageBtn').addEventListener('click', async () => {
+        if (!selectedUserId) {
+            alert('Сначала найдите пользователя!');
+            return;
+        }
+
+        const content = document.getElementById('messageContent').value;
+        const response = await fetch('/api/admin/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('auth_token')}`
+            },
+            body: JSON.stringify({
+                user_id: selectedUserId,
+                content: content
+            })
+        });
+
+        if (response.ok) {
+            alert('Сообщение отправлено!');
+            document.getElementById('messageContent').value = '';
+        }
+    });
+
+    // Переключение панелей
+    window.togglePanel = (panelId) => {
+        document.getElementById(panelId).classList.toggle('active');
+    };
+});
+
+// Функция для получения куки
+function getCookie(name) {
+    const cookies = document.cookie.split('; ');
+    for (const cookie of cookies) {
+        const [key, value] = cookie.split('=');
+        if (key === name) return decodeURIComponent(value);
+    }
+    return null;
+}
+</script>
+{% endblock %}
