@@ -149,7 +149,7 @@ def getItems():
     })
 
 
-@blueprint.route('/api/items/update/<int:item_id>', methods=['POST', 'PUT', 'DELETE'])
+@blueprint.route('/api/items/update/<int:item_id>', methods=['POST', 'PUT'])
 @auth.login_required
 def updateItem(item_id):
     try:
@@ -201,7 +201,8 @@ def updateItem(item_id):
 
         db_sess.commit()
         return jsonify({
-            'success': True, 'message': 'Item updated'
+            'success': True,
+            'message': 'Item updated'
         }), 200
     
     except Exception as e:
@@ -226,7 +227,10 @@ def deleteItem(item_id):
             raise Exception('Item was purchased')
         db_sess.delete(item)
         db_sess.commit()
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'message': 'Item deleted'
+        })
     
     except Exception as e:
         db_sess.rollback()
