@@ -462,6 +462,14 @@ def search():
     )
 
 
+@app.route('/banned')
+def banned_page():
+    logout_user()
+    response = make_response(render_template('banned.html'))
+    response.delete_cookie('auth_token')
+    return response
+
+
 @app.route('/logout')
 @login_required
 def logout():
