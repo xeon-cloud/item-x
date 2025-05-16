@@ -110,8 +110,7 @@
                                 <img src="{{ url_for('static', filename='images/avatars/default.png') }}" style="width: 60px; height: 60px; border-radius: 50%;">
                             {% endif %}
                         </label>
-                        <input type="file" id="avatar-upload" style="display: none;" accept="image/*">
-                        <span style="margin-left: 10px;color: aqua;font-weight: bold;">{{ current_user.username }}</span> <i class="fa fa-pencil" style="margin-left: 5px;"></i>
+                        <span style="margin-left: 10px;color: aqua;font-weight: bold;">{{ current_user.username }}</span>
                     </div>
                 </div>
                 {% if current_user.id != 0 %}
@@ -137,11 +136,11 @@
                     </div>
                         <div class="card-footer">
                         <div class="button-grid">
-                            <button class="btn btn-success" data-toggle="modal" data-target="#addFundsModal">
+                            <button class="btn btn-success" data-toggle="modal" data-target="#withdrawModal">
                                 <i class="fa fa-arrow-up"></i>
                                 Пополнить
                             </button>
-                            <button class="btn btn-secondary">
+                            <button class="btn btn-secondary" data-toggle="modal" data-target="#withdrawModal">
                                 <i class="fa fa-arrow-down"></i>
                                 Вывести
                             </button>
@@ -195,6 +194,40 @@
                         <div class="input-group">
                             <input type="number" class="form-control" min="1" id="amount" name="amount" placeholder="Сумма в ₽" required>
                             <span class="input-group-text">₽</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                        <button type="submit" class="btn btn-primary">Подтвердить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Модальное окно для вывода -->
+<div class="modal fade" id="withdrawModal" tabindex="-1" role="dialog" aria-labelledby="withdrawModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="withdrawModalLabel"><i class="fa fa-arrow-down"></i> Вывод средств</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="/withdraw">
+                    <div class="form-group">
+                        <label for="amount">Введите сумму:</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" min="1" max="{{ current_user.balance }}" id="amount" name="amount" placeholder="Сумма" required>
+                            <span class="input-group-text">₽</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reqs">Введите реквизиты:</label>
+                        <div class="input-group">
+                            <input class="form-control" id="reqs" name="reqs" placeholder="Номер карты или СБП" required>
                         </div>
                     </div>
                     <div class="modal-footer">

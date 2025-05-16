@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Code Input with CodeMirror</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <style>
+        /* Настройки для CodeMirror */
+        .CodeMirror {
+            height: auto;
+            border: 1px solid #ddd;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Введите ваш код на Python</h1>
+    <textarea id="code-input" placeholder="Введите ваш код здесь..."></textarea>
+    <button id="submit-code">Отправить код</button>
+
+    <script>
+        // Инициализация CodeMirror
+        var editor = CodeMirror.fromTextArea(document.getElementById("code-input"), {
+            lineNumbers: true,
+            mode: "python",
+            theme: "default"
+        });
+
+        document.getElementById('submit-code').addEventListener('click', () => {
+            const code = editor.getValue(); // Получение текста из редактора
+            alert("Код отправлен:\n" + code);
+        });
+    </script>
+</body>
+</html>

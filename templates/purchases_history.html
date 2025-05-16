@@ -11,7 +11,6 @@
                     <th>Товар</th>
                     <th>Описание</th>
                     <th>Цена</th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -24,7 +23,7 @@
                         </a>
                     </td>
                     <td>{{ purchase.item_description }}</td>
-                    <td>{{ purchase.price }}</td>
+                    <td>{{ purchase.price | int }}₽</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1,6 +1,6 @@
 from flask import Flask
-from flask_wtf.csrf import CSRFProtect
 import os
+import api.user as user
 import api.items as items
 import api.alerts as alerts
 import api.subcats as subcats
@@ -10,6 +10,7 @@ import auth
 
 app = Flask(__name__)
 
+app.register_blueprint(user.blueprint)
 app.register_blueprint(items.blueprint)
 app.register_blueprint(subcats.blueprint)
 app.register_blueprint(alerts.blueprint)

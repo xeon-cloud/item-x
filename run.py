@@ -4,7 +4,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 from flask_wtf.csrf import CSRFError
 from werkzeug.datastructures import FileStorage
 from wtforms.validators import DataRequired
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from werkzeug.utils import secure_filename
 import time
 import os
@@ -23,6 +23,8 @@ from data import db_session
 from data.users import User
 from data.subcategories import SubCat
 from data.items import Item
+from data.withdraws import WithDraw
+from data.reviews import Review
 from data.alerts import Alert, RenderAlerts
 from data.holds import Hold, targetHolds
 
@@ -59,6 +61,19 @@ def cats() -> dict:
     with open('categories.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
+def filterItems(items):
+    mnPrice, mxPrice = request.args.get('minPrice'), request.args.get('maxPrice')
+    if mnPrice and mxPrice and mnPrice.isdigit() and mnPrice.isdigit() and int(mnPrice) <= int(mxPrice):
+        for i, j in enumerate(items):
+            if not (j.amount >= int(mnPrice) and j.amount <= int(mxPrice)):
+                items.pop(i)
+
+    dateType = request.args.get('dateType')
+    items = sorted(
+        items, key=lambda item: item.created_date,
+        reverse=False if dateType == 'old' else True
+    )
+    return items
 
 
 @app.before_request
@@ -162,19 +177,8 @@ def loadServicesCategory(cat, id):
         (Item.buyer == None)
     ).all()
 
-    # режим фильтра
-    mnPrice, mxPrice = request.args.get('minPrice'), request.args.get('maxPrice')
-    if mnPrice and mxPrice and mnPrice.isdigit() and mnPrice.isdigit() and int(mnPrice) <= int(mxPrice):
-        for i, j in enumerate(items):
-            amount = j.amount
-            if not (amount >= int(mnPrice) and amount <= int(mxPrice)):
-                items.pop(i)
-
-    dateType = request.args.get('dateType')
-    items = sorted(
-        items, key=lambda item: item.created_date,
-        reverse=False if dateType == 'old' else True
-    )
+    # если включен фильтр перебираем
+    items = filterItems(items)
 
     db_sess.close()
 
@@ -269,26 +273,94 @@ def admin_panel():
         abort(403)
     return render_template('admin_panel.html')
 
+@app.route('/withdraws')
+@login_required
+def withdraws():
+    if current_user.id != 0:
+        abort(403)
+    try:
+        db_sess = db_session.create_session()
+        data = db_sess.query(WithDraw).all()
+
+        withDraws = []
+        for i in data:
+            user = db_sess.query(User).filter(User.id == i.user_id).first()
+            withDraws.append((i.id, i.format_date(), f'{user.username}(id:{user.id})', i.amount, i.reqs))
+
+        return render_template('withdraws.html', withDraws=withDraws, backed='/')
+    except Exception as e:
+        db_sess.rollback()
+        print(f'app err - {e}')
+        return jsonify({'code': 'internal error', 'message': str(e)}), 401
+    finally:
+        db_sess.close()
+
+variables = {
+    'accept': 'одобрена',
+    'decline': 'отклонена'
+}
+
+@app.route('/withdraws/<int:id>')
+@login_required
+def manageWithDraws(id):
+    if current_user.id != 0:
+        abort(403)
+        
+    try:
+        action = request.args.get('action')
+        if action and action in variables.keys():
+            db_sess = db_session.create_session()
+            req = db_sess.query(WithDraw).filter(WithDraw.id == id).first()
+            if req:
+                db_sess.delete(req)
+                color = '#00FF00'
+                if action == 'decline':
+                    color = '#FF0000'
+                    user = db_sess.query(User).filter(User.id == req.user_id).first()
+                    user.balance += req.amount
+                render = render_alerts.withdraw
+                db_sess.add(Alert(
+                    owner=req.user_id,
+                    header=render[0],
+                    content=render[1].format(color, f'Ваша заявка на вывод {variables[action]}')
+                ))
+                db_sess.commit()
+                flash(f'Заявка успешно {variables[action]}', 'success')
+                
+        return redirect('/withdraws')
+    except Exception as e:
+        db_sess.rollback()
+        print(f'app err - {e}')
+        return jsonify({'code': 'internal error', 'message': str(e)}), 401
+    finally:
+        db_sess.close()
+
 
 @app.route('/cabinet')
 def loadCabinet():
     if current_user.is_authenticated:
-        db_sess = db_session.create_session()
-        user = db_sess.query(User).filter(User.id == current_user.id).first()
+        try:
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).filter(User.id == current_user.id).first()
 
-        sells = db_sess.query(Item).filter(Item.owner == user.id and Item.buyer).all()
-        count_sells = len(sells)
-        sum_sells = sum([i.amount for i in sells])
+            sells = db_sess.query(Item).filter(Item.owner == user.id and Item.buyer).all()
+            count_sells = len(sells)
+            sum_sells = sum([i.amount for i in sells])
 
-        db_sess.close()
-        return render_template(
-            'cabinet.html',
-            balance_rub=user.balance, balance_usd=f'{converter.convert(user.balance):.2f}',
-            hold_rub=user.hold, hold_usd=f'{converter.convert(user.hold):.2f}',
-            count_sells=count_sells, sum_sells=f'{sum_sells}₽ (${converter.convert(sum_sells):.2f})',
-            date_register=user.format_date(),
-            backed='/'
-        )
+            return render_template(
+                'cabinet.html',
+                balance_rub=user.balance, balance_usd=f'{converter.convert(user.balance):.2f}',
+                hold_rub=user.hold, hold_usd=f'{converter.convert(user.hold):.2f}',
+                count_sells=count_sells, sum_sells=f'{sum_sells}₽ (${converter.convert(sum_sells):.2f})',
+                date_register=user.format_date(),
+                backed='/'
+            )
+        except Exception as e:
+            db_sess.rollback()
+            print(f'app err - {e}')
+            return jsonify({'code': 'internal error', 'message': str(e)}), 401
+        finally:
+            db_sess.close()
     return redirect('/')
 
 
@@ -303,13 +375,50 @@ def loadUser(id):
     count_sells = len(sells)
     sum_sells = sum([i.amount for i in sells])
 
+    accessReview = True if (not db_sess.query(Review).filter(Review.owner == current_user.id and Review.seller == user.id).first()) \
+                            and (db_sess.query(Item).filter(and_(
+                                    Item.owner == user.id,
+                                    Item.buyer == current_user.id)
+                                ).first()
+                            ) else False
+
     return render_template(
         'profile.html',
         user=user, count_sells=count_sells,
         sum_sells=f'{sum_sells}₽ (${converter.convert(sum_sells):.2f})',
-        date_register=user.format_date(), now=int(time.time()),
+        date_register=user.format_date(), now=int(time.time()), accessReview=accessReview,
         backed='/'
     )
+
+@app.route('/user/<int:id>/review/post/<int:value>')
+def postReview(id, value):
+    try:
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == id).first()
+        if not user or id == 0 or value not in [0, 1]:
+            abort(404)
+
+        if value == 0:
+            user.bad_reviews += 1
+        elif value == 1:
+            user.good_reviews += 1
+
+        db_sess.add(Review(
+            owner=current_user.id,
+            seller=user.id
+        ))
+        db_sess.commit()
+        
+        flash('Оценка успешно оставлена', 'success')
+        return redirect(f'/user/{id}')
+    except Exception as e:
+        db_sess.rollback()
+        print(f'app err - {e}')
+        return jsonify({'code': 'internal error', 'message': str(e)}), 401
+    finally:
+        db_sess.close()
+
+    
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -423,6 +532,34 @@ def deposit():
 
     return jsonify({'success': False, 'message': m}), 401
 
+@app.route('/withdraw', methods=['POST'])
+@login_required
+def withdraw():
+    # если вход через поддержку то пинаем работать
+    if current_user.id == 0:
+        return redirect('/chats')
+    amount, reqs = request.form.get('amount'), request.form.get('reqs')
+    if amount and reqs:
+        try:
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).filter(User.id == current_user.id).first()
+            user.balance = user.balance - int(amount)
+            db_sess.add(WithDraw(
+                user_id=current_user.id,
+                amount=int(amount),
+                reqs=reqs
+            ))
+            db_sess.commit()
+            flash('Заявка на вывод успешно создана. По результату оповестим вас.', 'success')
+            return redirect('/cabinet')
+        except Exception as e:
+            db_sess.rollback()
+            m = str(e)
+    else:
+        m = 'invalid data'
+
+    return jsonify({'success': False, 'message': m}), 401
+
 
 @app.route('/search')
 def search():
@@ -441,25 +578,35 @@ def search():
     ).all()
     db_sess.close()
 
-    # режим фильтра
-    mnPrice, mxPrice = request.args.get('minPrice'), request.args.get('maxPrice')
-    if mnPrice and mxPrice and mnPrice.isdigit() and mnPrice.isdigit() and int(mnPrice) <= int(mxPrice):
-        for i, j in enumerate(items):
-            if not (j.amount >= int(mnPrice) and j.amount <= int(mxPrice)):
-                items.pop(i)
-
-    dateType = request.args.get('dateType')
-    items = sorted(
-        items, key=lambda item: item.created_date,
-        reverse=False if dateType == 'old' else True
-    )
+    # если включен фильтр перебираем
+    items = filterItems(items)
 
     return render_template(
         'catalog.html',
-        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id, i.created_date) for i in
-               items],
+        items=[(str(i.id), i.name, i.about, str(i.amount), i.category_name, i.subcategory_id, i.created_date) for i in items],
         backed='/'
     )
+
+@app.route('/delete')
+def deleteItem():
+    id = request.args.get('id')
+    if id and id.isdigit():
+        try:
+            db_sess = db_session.create_session()
+            item = db_sess.query(Item).filter(Item.id == int(id) and Item.owner == current_user.id).first()
+            if item and not item.buyer:
+                db_sess.delete(item)
+                db_sess.commit()
+
+                flash('Товар успешно удален', 'success')
+                return redirect('/cabinet/my_items')
+            
+        except Exception as e:
+            db_sess.rollback()
+            print(f'del err - {e}')
+        finally:
+            db_sess.close()
+    abort(404)
 
 
 @app.route('/banned')

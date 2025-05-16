@@ -109,6 +109,16 @@
     
     <hr>
 
+    {% if accessReview %}
+        <div class="info-item">
+            <a href="/user/{{ user.id }}/review/post/1" class="btn btn-success" style="margin-right: 8px;">
+                <i class="fa fa-thumbs-up"></i>
+            </a>
+            <a href="/user/{{ user.id }}/review/post/0" class="btn btn-danger">
+                <i class="fa fa-thumbs-down"></i>
+            </a>
+        </div>
+    {% endif %}
     <button class="btn btn-primary" data-toggle="modal" data-target="#sendMesModal">
         Написать
     </button>

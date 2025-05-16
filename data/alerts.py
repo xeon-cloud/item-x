@@ -11,6 +11,10 @@ class RenderAlerts:
         '<span class="ms-2"><i class="fa fa-unlock-alt" aria-hidden="true" style="margin-right: 5px"></i>Холд окончен</span>',
         '<span style="color: #00FF00">{}₽ зачислены на ваш баланс</span>'
     )
+    withdraw = (
+        '<span class="ms-2"><i class="fa fa-arrow-down" aria-hidden="true" style="margin-right: 5px"></i>Оповещение</span>',
+        '<span style="color: {}">{}</span>'
+    )
 
 class Alert(db_session.SqlAlchemyBase):
     __tablename__ = 'alerts'

@@ -220,7 +220,7 @@ def deleteItem(item_id):
     try:
         """Удаление товара пользователя."""
         db_sess = db_session.create_session()
-        item = db_sess.query(Item).filter(Item.id == item_id, Item.owner == str(auth.current_user().id)).first()
+        item = db_sess.query(Item).filter(Item.id == item_id and Item.owner == auth.current_user().id).first()
         if not item:
             raise Exception('Item not found or not owned by user')
         if item.buyer:

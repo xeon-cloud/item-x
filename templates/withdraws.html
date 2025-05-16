@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Заявки на вывод</h1>
+    {% if withDraws %}
+        <table class="table text-white">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Пользователь</th>
+                    <th>Сумма</th>
+                    <th>Реквизиты</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in withDraws %}
+                <tr>
+                    <td>{{ i[1] }}</td>
+                    <td>{{ i[2] }}</td>
+                    <td>{{ i[3] }}₽</td>
+                    <td>{{ i[4] }}</td>
+                    <td>
+                        <a class="btn btn-success" href="/withdraws/{{ i[0] }}?action=accept">
+                            <i class="fa fa-check"></i>
+                            Одобрить
+                        </a>
+                        <a class="btn btn-danger" href="/withdraws/{{ i[0] }}?action=decline">
+                            <i class="fa fa-times"></i>
+                            Отклонить
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #ffffff;text-align: center;">У вас пока нет покупок.</p>
+    {% endif %}
+</div>
+{% endblock %}
